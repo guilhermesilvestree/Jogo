@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eco-Localizador</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000000;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .game-container {
+            position: relative;
+            width: 90vw;
+            height: 90vh;
+            max-width: 1000px;
+            max-height: 600px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 8px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-color: #080808;
+            cursor: none;
+            border-radius: 8px;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            z-index: 10;
+            border-radius: 8px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .overlay.visible {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .overlay h1 {
+            font-size: 3em;
+            margin: 0;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff, 0 0 5px #ffffff;
+        }
+        .overlay p {
+            font-size: 1.2em;
+            margin-top: 15px;
+            max-width: 80%;
+        }
+        .overlay button {
+            margin-top: 25px;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            background-color: #00ffff;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 0 15px #00ffff;
+            transition: background-color 0.3s, color 0.3s, transform 0.2s;
+            width: 250px;
+        }
+        .overlay button:hover {
+            background-color: #fff;
+            transform: scale(1.05);
+        }
+        #main-menu {
+            z-index: 20;
+        }
+        #main-menu h1 {
+             font-size: 4em;
+        }
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .option-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2em;
+        }
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 200px;
+            height: 8px;
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+            border-radius: 5px;
+            outline: none;
+            cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00ffff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ffff;
+        }
+        input[type=range]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00ffff;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px #00ffff;
+        }
+        #loading-indicator {
+            font-size: 1.5em;
+            color: #00ffff;
+            display: none;
+        }
+        #loading-indicator.visible {
+            display: block;
+        }
+        #hud {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #00ffff;
+            font-size: 1em;
+            text-shadow: 0 0 5px #00ffff;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #hud.visible {
+            opacity: 1;
+        }
+        #cooldowns-hud {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #cooldowns-hud.visible {
+            opacity: 1;
+        }
+        .cooldown-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+        .cooldown-label {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #fff;
+            background: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #00ffff;
+        }
+        .cooldown-bar {
+            width: 100px;
+            height: 10px;
+            background: rgba(0, 255, 255, 0.2);
+            border: 1px solid #00ffff;
+            border-radius: 3px;
+        }
+        .cooldown-fill {
+            width: 100%;
+            height: 100%;
+            background: #00ffff;
+            transition: width 0.1s linear;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="hud"></div>
+        <div id="cooldowns-hud">
+             <div class="cooldown-item">
+                <div class="cooldown-label">Q</div>
+                <div class="cooldown-bar">
+                    <div id="q-cooldown-fill" class="cooldown-fill"></div>
+                </div>
+            </div>
+            <div class="cooldown-item">
+                <div class="cooldown-label">E</div>
+                <div class="cooldown-bar">
+                    <div id="e-cooldown-fill" class="cooldown-fill"></div>
+                </div>
+            </div>
+        </div>
+        <div id="message-overlay" class="overlay">
+            <h1 id="message-title"></h1>
+            <p id="message-text"></p>
+            <div id="loading-indicator">Gerando sussurro...</div>
+            <button id="message-button"></button>
+        </div>
+        <div id="main-menu" class="overlay visible">
+             <h1>Eco-Localizador</h1>
+             <p>A escuridão ouve cada passo seu.</p>
+             <div class="menu-buttons">
+                <button id="start-game-button">Iniciar Aventura</button>
+                <button id="options-button">Opções</button>
+                <button id="credits-button">Créditos</button>
+             </div>
+        </div>
+        <div id="options-menu" class="overlay">
+            <h1>Opções</h1>
+            <div class="option-item">
+                <label for="volume-slider">Volume:</label>
+                <input type="range" id="volume-slider" min="0" max="100" value="100">
+            </div>
+            <button class="back-button">Voltar</button>
+        </div>
+        <div id="credits-menu" class="overlay">
+            <h1>Créditos</h1>
+            <p><strong>Desenvolvido por:</strong> Gemini & Você</p>
+            <p><strong>Conceito Original:</strong> Você</p>
+            <p><strong>Tecnologias:</strong> HTML, CSS, JavaScript, Tone.js</p>
+            <p><strong>Motor de Narrativa:</strong> Google Gemini API</p>
+            <button class="back-button">Voltar</button>
+        </div>
+    </div>
+
+    <script type="module">
+        // =================================================================
+        // JOGO: ECO-LOCALIZADOR (Edição Gemini)
+        // Conceito: Use o som para ver, mas cuidado com quem ouve.
+        // =================================================================
+
+        // --- SETUP INICIAL ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const hud = document.getElementById('hud');
+        const cooldownsHud = document.getElementById('cooldowns-hud');
+        const qCooldownFill = document.getElementById('q-cooldown-fill');
+        const eCooldownFill = document.getElementById('e-cooldown-fill');
+        const messageOverlay = document.getElementById('message-overlay');
+        const messageTitle = document.getElementById('message-title');
+        const messageText = document.getElementById('message-text');
+        const loadingIndicator = document.getElementById('loading-indicator');
+        const mainMenu = document.getElementById('main-menu');
+        const startGameButton = document.getElementById('start-game-button');
+        const optionsMenu = document.getElementById('options-menu');
+        const creditsMenu = document.getElementById('credits-menu');
+        const optionsButton = document.getElementById('options-button');
+        const creditsButton = document.getElementById('credits-button');
+        const backButtons = document.querySelectorAll('.back-button');
+        const volumeSlider = document.getElementById('volume-slider');
+
+        let gameRunning = false;
+        let currentLevelIndex = 0;
+        let nextLevelDescription = null;
+        let isLevelEnding = false;
+        let isGameEnding = false; 
+        let gameStartTime = null; 
+        let apiOperational = true; 
+
+        function resizeCanvas() {
+            const container = document.querySelector('.game-container');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // --- GEMINI API & OTIMIZAÇÃO ---
+        async function callGemini(prompt) {
+            if (!apiOperational) { return "O eco se perdeu no vazio..."; }
+            loadingIndicator.classList.add('visible');
+            document.getElementById('message-button').style.display = 'none';
+            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+            const payload = { contents: chatHistory };
+            const apiKey = "";
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (!response.ok) { throw new Error(`API Error: ${response.statusText}`); }
+                const result = await response.json();
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    apiOperational = false;
+                    console.error("Resposta da API em formato inesperado:", result);
+                    return "A escuridão permanece em silêncio...";
+                }
+            } catch (error) {
+                apiOperational = false;
+                console.error("Erro ao chamar a API do Gemini:", error);
+                return "O eco se perdeu no vazio...";
+            } finally {
+                loadingIndicator.classList.remove('visible');
+                document.getElementById('message-button').style.display = 'inline-block';
+            }
+        }
+
+        async function preloadNextLevelDescription(levelIndex) {
+            if (levelIndex >= levels.length || !apiOperational) {
+                nextLevelDescription = "final";
+                return;
+            }
+            const nextLevel = levels[levelIndex];
+            const prompt = `You are a cryptic, omniscient narrator for 'Eco-Localizador'. Describe the next area. The level is named '${nextLevel.name}'. It contains ${nextLevel.enemies.length} creatures. ${nextLevel.water.length > 0 ? 'There are pools of water here.' : ''} Keep it short, atmospheric, and mysterious (2-3 sentences). No instructions. Respond in Portuguese.`;
+            callGemini(prompt).then(desc => { nextLevelDescription = desc; });
+        }
+
+        // --- ÁUDIO (TONE.JS) ---
+        let audioReady = false;
+        const sounds = {
+            shortPing: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).toDestination(),
+            longPing: new Tone.FMSynth({ modulationIndex: 10, envelope: { attack: 0.01, decay: 0.2 }, harmonicity: 3 }).toDestination(),
+            jump: new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 2, envelope: { attack: 0.001, decay: 0.1, sustain: 0 } }).toDestination(),
+            step: new Tone.NoiseSynth({ noise: { type: 'pink' }, envelope: { attack: 0.001, decay: 0.05, sustain: 0 } }).toDestination(),
+            enemyAlert: new Tone.AMSynth({ harmonicity: 1.5, envelope: { attack: 0.01, decay: 0.2 } }).toDestination(),
+            splash: new Tone.MembraneSynth({ pitchDecay: 0.1, octaves: 4, envelope: { attack: 0.05, decay: 0.4, sustain: 0 } }).toDestination(),
+            levelWin: new Tone.PluckSynth({ attackNoise: 1, dampening: 2000, resonance: 0.9 }).toDestination(),
+            levelWinExplosion: new Tone.NoiseSynth({noise: {type: 'white'}, envelope: {attack: 0.1, decay: 1.5, sustain: 0}}).toDestination(),
+            gameWin: new Tone.Synth({oscillator: {type: 'fatsawtooth'}, envelope: {attack: 0.5, decay: 2, sustain: 0.1, release: 1}}).toDestination(),
+            gameOver: new Tone.MembraneSynth({ pitchDecay: 0.2, octaves: 8, envelope: { attack: 0.01, decay: 0.8, sustain: 0 } }).toDestination(),
+            lorePing: new Tone.PluckSynth({ attackNoise: 0.5, dampening: 8000, resonance: 0.9 }).toDestination(),
+        };
+        async function initAudio() { if (audioReady) return; await Tone.start(); audioReady = true; }
+
+        // --- CONTROLES ---
+        const keys = { a: { pressed: false }, d: { pressed: false }, arrowLeft: { pressed: false }, arrowRight: { pressed: false }, w: { pressed: false }, arrowUp: { pressed: false }, space: { pressed: false } };
+        window.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            switch (e.key.toLowerCase()) {
+                case 'a': keys.a.pressed = true; break;
+                case 'd': keys.d.pressed = true; break;
+                case 'arrowleft': keys.arrowLeft.pressed = true; break;
+                case 'arrowright': keys.arrowRight.pressed = true; break;
+                case 'w': case 'arrowup': case ' ': if (!keys.space.pressed) { player.jump(); keys.space.pressed = true; } break;
+                case 'q': player.createPing('short'); break;
+                case 'e': player.createPing('long'); break;
+            }
+        });
+        window.addEventListener('keyup', (e) => {
+             switch (e.key.toLowerCase()) {
+                case 'a': keys.a.pressed = false; break;
+                case 'd': keys.d.pressed = false; break;
+                case 'arrowleft': keys.arrowLeft.pressed = false; break;
+                case 'arrowright': keys.arrowRight.pressed = false; break;
+                case 'w': case 'arrowup': case ' ': keys.space.pressed = false; break;
+            }
+        });
+
+        // --- ESTRUTURAS DO JOGO (Classes) ---
+        const GRAVITY = 0.5;
+
+        class Player {
+            constructor() {
+                this.width = 22; this.height = 42; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
+                this.speed = 4; this.jumpForce = 12; this.onGround = false;
+                this.shortPingCooldown = 500; this.lastShortPing = 0;
+                this.longPingCooldown = 3000; this.lastLongPing = 0;
+                this.stepSoundInterval = 250; this.lastStepTime = 0; this.lastY = this.position.y; this.revealTime = 0;
+                this.finalAnimationState = null; this.spawnTime = 0; this.breathOffset = 0;
+            }
+            reset(x, y) { this.position = { x, y }; this.velocity = { x: 0, y: 0 }; this.onGround = false; this.revealTime = 0; this.spawnTime = Date.now(); }
+            draw() {
+                if(this.finalAnimationState) { this.drawWinAnimation(); return; }
+                this.breathOffset = Math.sin(Date.now() / 400) * 0.5;
+                const alpha = (Date.now() < this.revealTime) ? 1 : 0.6;
+                const color = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillStyle = color;
+                if (alpha === 1) { ctx.shadowColor = 'rgba(255, 255, 255, 0.7)'; ctx.shadowBlur = 15; }
+                const x = this.position.x; const y = this.position.y + this.breathOffset; const w = this.width; const h = this.height;
+                ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + h); ctx.lineTo(x + w * 0.3, y + h * 0.5); ctx.quadraticCurveTo(x + w * 0.4, y + h * 0.4, x + w * 0.5, y + h * 0.4); ctx.quadraticCurveTo(x + w * 0.6, y + h * 0.4, x + w * 0.7, y + h * 0.5); ctx.lineTo(x + w * 0.7, y + h); ctx.closePath(); ctx.fill();
+                ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.4, 0, Math.PI * 2); ctx.fill();
+                if (alpha === 1) { ctx.shadowBlur = 0; }
+            }
+            drawWinAnimation() {
+                ctx.save();
+                const anim = this.finalAnimationState; ctx.globalAlpha = anim.alpha; const x = this.position.x; const y = anim.y;
+                const gradient = ctx.createRadialGradient(x + this.width / 2, y + this.height / 2, 0, x + this.width / 2, y + this.height / 2, anim.pulse);
+                gradient.addColorStop(0, `rgba(255, 255, 255, 0.8)`); gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
+                ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(x + this.width / 2, y + this.height / 2, anim.pulse, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = `rgba(255, 255, 255, ${anim.alpha})`; ctx.beginPath(); ctx.arc(x + this.width / 2, y + this.width / 3, this.width / 2.5, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x, y + this.width / 3, this.width, this.height - this.width / 3);
+                ctx.restore();
+            }
+            update(platforms, waterRects) { this.handleMovement(waterRects); this.applyGravity(); this.checkCollisions(platforms, waterRects); this.lastY = this.position.y; }
+            handleMovement(waterRects) {
+                this.velocity.x = 0;
+                if (keys.a.pressed || keys.arrowLeft.pressed) this.velocity.x = -this.speed;
+                if (keys.d.pressed || keys.arrowRight.pressed) this.velocity.x = this.speed;
+                const moving = this.velocity.x !== 0;
+                const isInWater = waterRects.some(water => this.isCollidingWith(water));
+                if (moving && this.onGround && Date.now() - this.lastStepTime > this.stepSoundInterval) {
+                    this.lastStepTime = Date.now();
+                    if (!isInWater) { sounds.step.triggerAttack("8n"); createNoise(this.position.x + this.width / 2, this.position.y + this.height, 80, 0.1); }
+                }
+            }
+            applyGravity() {
+                this.onGround = false; this.position.y += this.velocity.y; this.position.x += this.velocity.x; this.velocity.y += GRAVITY;
+                if (this.position.x < 0) { this.position.x = 0; }
+                if (this.position.x + this.width > canvas.width) { this.position.x = canvas.width - this.width; }
+            }
+            checkCollisions(platforms, waterRects) {
+                for (const platform of platforms) { if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } }
+                for (const platform of platforms) { if (this.isCollidingWith(platform)) { if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) { this.position.x = platform.position.x - this.width; this.velocity.x = 0; } if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) { this.position.x = platform.position.x + platform.width; this.velocity.x = 0; } } }
+                const wasInWater = waterRects.some(water => this.wasCollidingWith(water, this.lastY));
+                const isInWater = waterRects.some(water => this.isCollidingWith(water));
+                if (!wasInWater && isInWater && this.velocity.y > 2) { sounds.splash.triggerAttackRelease("C2", "0.5s"); createNoise(this.position.x + this.width/2, this.position.y + this.height, 300, 0.8); }
+            }
+            isCollidingWith(rect) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && this.position.y < rect.position.y + rect.height && this.position.y + this.height > rect.position.y; }
+            wasCollidingWith(rect, lastY) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && lastY < rect.position.y + rect.height && lastY + this.height > rect.position.y; }
+            jump() { if (this.onGround) { this.velocity.y = -this.jumpForce; sounds.jump.triggerAttackRelease("C3", "0.1s"); } }
+            createPing(type) {
+                const now = Date.now();
+                const center = { x: this.position.x + this.width / 2, y: this.position.y + this.height / 2 };
+                const isInWater = game.level.water.some(water => this.isCollidingWith(water));
+                if (type === 'short' && now - this.lastShortPing > this.shortPingCooldown) {
+                    this.lastShortPing = now;
+                    let radius = isInWater ? 60 : 120;
+                    pings.push(new Ping(center.x, center.y, radius, 1500, 'rgba(0, 255, 255, 1)', 4, 15));
+                    createNoise(center.x, center.y, radius * 2, 0.3); sounds.shortPing.triggerAttackRelease("C5", "8n");
+                } else if (type === 'long' && now - this.lastLongPing > this.longPingCooldown) {
+                    this.lastLongPing = now;
+                    let radius = isInWater ? 120 : 300;
+                    pings.push(new Ping(center.x, center.y, radius, 4000, 'rgba(255, 255, 255, 1)', 6, 40));
+                    createNoise(center.x, center.y, radius * 2.5, 1.0); sounds.longPing.triggerAttackRelease("C3", "0.5s");
+                }
+            }
+        }
+
+        class Ping {
+            constructor(x, y, maxRadius, duration, color, speed, particleCount) { this.position = { x, y }; this.radius = 0; this.maxRadius = maxRadius; this.duration = duration; this.color = color; this.speed = speed; this.creationTime = Date.now(); this.active = true; this.particles = []; for (let i = 0; i < particleCount; i++) { this.particles.push(new PingParticle(this.position.x, this.position.y, this.color)); } }
+            update() { this.radius += this.speed; this.particles.forEach(p => { if (p.life > 0) p.update(); }); if (this.radius >= this.maxRadius) { this.radius = this.maxRadius; if (Date.now() - this.creationTime > 500) { this.active = false; } } }
+            draw() {
+                const elapsed = Date.now() - this.creationTime;
+                const alpha = Math.max(0, 1 - elapsed / (this.duration * 0.5));
+                for (let i = 0; i < 3; i++) {
+                    ctx.beginPath();
+                    const currentRadius = this.radius - i * 15;
+                    if (currentRadius > 0) {
+                        ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * (1 - i * 0.3)})`;
+                        ctx.lineWidth = 1 + (1 - alpha);
+                        ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+                this.particles.forEach(p => { if (p.life > 0) p.draw(); });
+            }
+        }
+
+        class PingParticle {
+            constructor(x, y, color) { this.x = x; this.y = y; const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed; this.lifespan = 50 + Math.random() * 50; this.life = this.lifespan; this.color = color; }
+            update() { this.x += this.vx; this.y += this.vy; this.life--; }
+            draw() { ctx.fillStyle = this.color.replace('1)', `${this.life / this.lifespan})`); ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill(); }
+        }
+
+        class Enemy {
+            constructor(x, y) { this.width = 25; this.height = 45; this.startPosition = { x, y }; this.position = { x, y }; this.velocity = { x: 1, y: 0 }; this.speed = 1; this.state = 'patrol'; this.target = null; this.revealTime = 0; this.onGround = false; }
+            reset() { this.position = { ...this.startPosition }; this.state = 'patrol'; this.target = null; this.velocity.x = this.speed; }
+            draw() {
+                if (Date.now() < this.revealTime) {
+                    const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 1000);
+                    ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`; ctx.beginPath();
+                    ctx.moveTo(this.position.x, this.position.y + this.height); ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7); ctx.lineTo(this.position.x + this.width, this.position.y + this.height); ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5); ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true); ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5); ctx.closePath(); ctx.fill();
+                }
+            }
+            update(player, platforms, noises) {
+                this.onGround = false;
+                this.velocity.y += GRAVITY;
+                this.position.y += this.velocity.y;
+                this.position.x += this.velocity.x;
+
+                for (const platform of platforms) {
+                    // Vertical collision
+                    if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
+                        this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height;
+                    }
+                    // Horizontal collision
+                    if (this.isCollidingWith(platform)) {
+                        if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) {
+                            this.position.x = platform.position.x - this.width; this.velocity.x *= -1;
+                        } else if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) {
+                            this.position.x = platform.position.x + platform.width; this.velocity.x *= -1;
+                        }
+                    }
+                }
+                this.handleAI(player, platforms, noises);
+            }
+            isCollidingWith(rect) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && this.position.y < rect.position.y + rect.height && this.position.y + this.height > rect.position.y; }
+            handleAI(player, platforms, noises) {
+                for (const noise of noises) {
+                    const distance = Math.hypot(this.position.x - noise.x, this.position.y - noise.y);
+                    if (distance < noise.radius * noise.intensity) {
+                        if (this.state === 'patrol') { sounds.enemyAlert.triggerAttackRelease("A4", "0.2s"); }
+                        this.state = 'investigating'; this.target = { x: noise.x, y: noise.y }; this.revealTime = Date.now() + 500;
+                    }
+                }
+                if (Date.now() < player.revealTime) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer < 200) { this.state = 'chasing'; this.target = player.position; } }
+                
+                // Edge detection for patrol
+                if (this.state === 'patrol' && this.onGround) {
+                    const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1;
+                    const groundCheckY = this.position.y + this.height + 5;
+                    let groundAhead = false;
+                    for (const platform of platforms) {
+                        if (lookAheadX >= platform.position.x && lookAheadX <= platform.position.x + platform.width && groundCheckY >= platform.position.y && groundCheckY <= platform.position.y + platform.height) {
+                            groundAhead = true;
+                            break;
+                        }
+                    }
+                    if (!groundAhead) { this.velocity.x *= -1; }
+                }
+
+                switch(this.state) {
+                    case 'patrol': this.velocity.x = this.speed * Math.sign(this.velocity.x || 1); break;
+                    case 'investigating': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 1.5 * Math.sign(this.target.x - this.position.x); if (Math.abs(this.position.x - this.target.x) < 10) { this.state = 'patrol'; this.target = null; this.velocity.x = this.speed * Math.sign(this.velocity.x); } break;
+                    case 'chasing': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 2 * Math.sign(this.target.x - this.position.x); const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if(distanceToPlayer > 400){ this.state = 'patrol'; this.target = null; } break;
+                }
+            }
+            reveal() { this.revealTime = Date.now() + 3000; }
+        }
+        
+        class RevealedObject {
+            constructor(platform, duration) { this.platform = platform; this.revealTime = Date.now(); this.duration = duration; }
+            draw() { const elapsed = Date.now() - this.revealTime; if (elapsed > this.duration) return false; const alpha = 1 - (elapsed / this.duration); this.platform.draw(alpha); return true; }
+        }
+        
+        class Platform {
+            constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; }
+            draw(alpha = 1) {
+                ctx.save(); ctx.globalAlpha = alpha; const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height);
+                grad.addColorStop(0, '#334'); grad.addColorStop(0.5, '#223'); grad.addColorStop(1, '#112');
+                ctx.fillStyle = grad; ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+                ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.7})`; ctx.lineWidth = 1; ctx.strokeRect(this.position.x, this.position.y, this.width, this.height);
+                ctx.restore();
+            }
+        }
+        
+        class LoreOrb {
+            constructor(x, y) { this.x = x; this.y = y; this.radius = 12; this.triggered = false; this.revealTime = 0; }
+            draw() {
+                if (Date.now() < this.revealTime && !this.triggered) {
+                    const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 4000); const gradient = ctx.createRadialGradient(this.x, this.y, this.radius * 0.2, this.x, this.y, this.radius);
+                    gradient.addColorStop(0, `rgba(224, 138, 255, ${alpha})`); gradient.addColorStop(1, `rgba(168, 85, 247, 0)`);
+                    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+            reveal() { this.revealTime = Date.now() + 4000; }
+            trigger() {
+                if (this.triggered) return; this.triggered = true; gameRunning = false; sounds.lorePing.triggerAttackRelease("C6", "0.2s");
+                const prompt = "You are a fragmented memory in 'Eco-Localizador'. Provide one short, cryptic piece of lore (1-2 sentences) about the 'Ouvintes' (monsters), the darkness, or the player. Be mysterious. Respond in Portuguese.";
+                callGemini(prompt).then(lore => {
+                    const isError = lore.includes("vazio") || lore.includes("silêncio"); const title = isError ? "Eco Silencioso" : "Um Eco do Passado...";
+                    const text = isError ? "A memória se desvanece antes que você possa compreendê-la." : `"${lore}"`;
+                    showMessage(title, text, "Continuar", () => { gameRunning = true; });
+                });
+            }
+        }
+
+        class HeartOfLight {
+            constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; this.revealTime = 0; this.isAbsorbed = false; }
+            draw() {
+                if (Date.now() < this.revealTime && !this.isAbsorbed) {
+                    const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 5000); const centerX = this.position.x + this.width / 2; const centerY = this.position.y + this.height / 2;
+                    const pulse = Math.sin(Date.now() / 200) * 5 + (this.width / 2); const gradient = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, pulse);
+                    gradient.addColorStop(0, `rgba(255, 255, 180, ${alpha})`); gradient.addColorStop(0.8, `rgba(255, 255, 0, ${alpha * 0.8})`); gradient.addColorStop(1, `rgba(255, 200, 0, 0)`);
+                    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(centerX, centerY, pulse, 0, Math.PI * 2); ctx.fill();
+                }
+            }
+            reveal() { this.revealTime = Date.now() + 5000; }
+            absorb() {
+                if (this.isAbsorbed) return; this.isAbsorbed = true; isLevelEnding = true; gameRunning = false;
+                sounds.levelWinExplosion.triggerAttackRelease("2n");
+                pings.push(new Ping(this.position.x + this.width / 2, this.position.y + this.height / 2, canvas.width * 1.5, 1500, 'rgba(255, 255, 255, 0.9)', 25, 0));
+                setTimeout(() => {
+                    sounds.levelWin.triggerAttackRelease("C5", "0.5s"); currentLevelIndex++;
+                    showMessage("Nível Concluído!", "A luz ressoa através de você.", "Próxima Fase", () => { isLevelEnding = false; game.loadLevel(currentLevelIndex); });
+                }, 1500);
+            }
+        }
+        
+        class Water {
+             constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; }
+             draw() { ctx.fillStyle = 'rgba(0, 50, 150, 0.3)'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); }
+        }
+
+        class AcidWater {
+            constructor(x, y, width, height) { this.position = {x, y}; this.width = width; this.height = height;}
+            draw() {
+                const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height);
+                grad.addColorStop(0, `rgba(100, 255, 100, 0.4)`);
+                grad.addColorStop(1, `rgba(50, 200, 50, 0.7)`);
+                ctx.fillStyle = grad;
+                ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+            }
+        }
+
+        // --- DADOS DAS FASES ---
+        const levelData = [
+            { name: "O Despertar", playerStart: { x: 50, y: 500 }, platforms: [ {x: 0, y: 580, w: 1000, h: 20}, {x: 250, y: 520, w: 150, h: 20}, {x: 500, y: 460, w: 150, h: 20}, {x: 300, y: 380, w: 100, h: 20}, {x: 500, y: 300, w: 200, h: 20} ], enemies: [], water: [], acid: [], loreOrbs: [], exit: { x: 650, y: 240, width: 50, height: 60 } },
+            { name: "Os Primeiros Ecos", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 150, y: 500, w: 100, h: 20 }, { x: 350, y: 440, w: 300, h: 20 }, { x: 750, y: 380, w: 100, h: 20 }, { x: 550, y: 300, w: 100, h: 20 }, { x: 200, y: 250, w: 250, h: 20 }, ], enemies: [ { x: 400, y: 395 }, { x: 220, y: 205 }, { x: 560, y: 255 } ], water: [], acid: [], loreOrbs: [ { x: 780, y: 360 } ], exit: { x: 220, y: 190, width: 50, height: 60 } },
+            { name: "A Caverna Inundada", playerStart: { x: 50, y: 200 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 0, y: 260, w: 200, h: 20 }, { x: 250, y: 350, w: 100, h: 20 }, { x: 400, y: 430, w: 10, h: 150 }, { x: 600, y: 450, w: 200, h: 20 }, ], enemies: [ { x: 100, y: 535 }, { x: 620, y: 405 }, { x: 260, y: 305 } ], water: [ { x: 0, y: 560, w: 400, h: 20 } ], acid: [{x: 410, y: 560, w: 190, h: 20}], loreOrbs: [ { x: 300, y: 330 } ], exit: { x: 750, y: 390, width: 50, height: 60 } },
+            { name: "A Fenda dos Sussurros", playerStart: { x: 80, y: 120 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 50, y: 180, w: 150, h: 20 }, { x: 300, y: 250, w: 100, h: 20 }, { x: 100, y: 350, w: 100, h: 20 }, { x: 250, y: 450, w: 100, h: 20 }, { x: 500, y: 500, w: 100, h: 20 }, { x: 650, y: 420, w: 100, h: 20 }, { x: 800, y: 340, w: 150, h: 20 }, { x: 600, y: 260, w: 100, h: 20 }, { x: 750, y: 180, w: 100, h: 20 }, { x: 900, y: 120, w: 100, h: 20 }, ], enemies: [ { x: 150, y: 535 }, { x: 810, y: 295 }, { x: 610, y: 215 }, { x: 110, y: 305}, { x: 260, y: 405} ], water: [], acid: [ { x: 450, y: 560, w: 400, h: 20 } ], loreOrbs: [ { x: 150, y: 330 } ], exit: { x: 925, y: 60, width: 50, height: 60 } },
+            { name: "O Coração da Escuridão", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 850, y: 500, w: 150, h: 20 }, { x: 0, y: 420, w: 750, h: 20 }, { x: 200, y: 320, w: 150, h: 20 }, { x: 450, y: 150, w: 20, h: 100 }, { x: 550, y: 220, w: 200, h: 20 }, { x: 200, y: 150, w: 200, h: 20 }, ], enemies: [ { x: 300, y: 375 }, { x: 600, y: 175 }, { x: 100, y: 535 }, { x: 220, y: 105 }, { x: 880, y: 455}, { x: 650, y: 375} ], acid: [ { x: 750, y: 400, w: 100, h: 20}], loreOrbs: [], exit: { x: 250, y: 90, width: 50, height: 60 } }
+        ];
+
+        const levels = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)) }));
+
+        // --- SISTEMA DE JOGO ---
+        let player, pings, enemies, loreOrbs, revealedObjects, noises, heartOfLight;
+
+        const game = {
+            level: null,
+            loadLevel: function(levelIndex) {
+                if (levelIndex >= levels.length) { this.winGame(); return; }
+                this.level = { ...levels[levelIndex] };
+                player = new Player(); player.reset(this.level.playerStart.x, this.level.playerStart.y);
+                enemies = this.level.enemies.map(e => new Enemy(e.x, e.y));
+                loreOrbs = this.level.loreOrbs.map(o => new LoreOrb(o.x, o.y));
+                const exit = this.level.exit;
+                heartOfLight = new HeartOfLight(exit.x, exit.y, exit.width, exit.height);
+                pings = []; revealedObjects = []; noises = [];
+                showLevelIntro(this.level);
+            },
+            restartLevel: function() {
+                player.reset(this.level.playerStart.x, this.level.playerStart.y);
+                enemies.forEach(e => e.reset());
+                loreOrbs.forEach(o => o.triggered = false);
+                pings = []; revealedObjects = []; noises = [];
+                const exit = this.level.exit;
+                heartOfLight = new HeartOfLight(exit.x, exit.y, exit.width, exit.height);
+                gameRunning = true;
+            },
+            winGame: function() {
+                gameRunning = false; isGameEnding = true; sounds.gameWin.triggerAttackRelease("C3", "4s");
+                const endTime = Date.now(); const timeTaken = Math.round((endTime - gameStartTime) / 1000);
+                const minutes = Math.floor(timeTaken / 60); const seconds = timeTaken % 60;
+                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                player.finalAnimationState = { y: player.position.y, alpha: 1, pulse: 0, finalMessage: `Você escapou! Tempo: ${timeString}` };
+            }
+        };
+
+        function createNoise(x, y, radius, intensity) { noises.push({x, y, radius, intensity, creationTime: Date.now()}); }
+        
+        function checkCollisionsAndReveal() {
+            if (isLevelEnding || isGameEnding) return;
+
+            for (const ping of pings) {
+                for (const platform of game.level.platforms) { if (isCircleIntersectingRect(ping, platform)) { revealedObjects.push(new RevealedObject(platform, ping.duration)); } }
+                for (const enemy of enemies) { if (isCircleIntersectingRect(ping, enemy)) { enemy.reveal(); } }
+                for (const orb of loreOrbs) { if (!orb.triggered && isCircleIntersectingRect(ping, {position: {x: orb.x - orb.radius, y: orb.y - orb.radius}, width: orb.radius*2, height: orb.radius*2})) { orb.reveal(); orb.trigger(); } }
+                if (isCircleIntersectingRect(ping, player)) { player.revealTime = Date.now() + ping.duration; }
+                if (isCircleIntersectingRect(ping, heartOfLight)) { heartOfLight.reveal(); }
+            }
+            if (Date.now() - player.spawnTime > 1000) {
+                 for (const enemy of enemies) {
+                    if (player.isCollidingWith(enemy)) {
+                        gameRunning = false; sounds.gameOver.triggerAttackRelease("C1", "1s");
+                        showMessage("Você foi Ouvido", "O silêncio era sua única defesa.", "Tentar Novamente", () => { game.restartLevel(); });
+                        return;
+                    }
+                }
+            }
+
+            for(const acidPool of game.level.acid) {
+                if(player.isCollidingWith(acidPool)) {
+                    gameRunning = false; sounds.gameOver.triggerAttackRelease("C1", "1s");
+                    showMessage("Corroído", "A escuridão líquida te consome.", "Tentar Novamente", () => { game.restartLevel(); });
+                    return;
+                }
+            }
+
+            if(player.isCollidingWith(heartOfLight)) { heartOfLight.absorb(); }
+        }
+
+        function isCircleIntersectingRect(circle, rect) { const distX = Math.abs(circle.position.x - rect.position.x - rect.width / 2); const distY = Math.abs(circle.position.y - rect.position.y - rect.height / 2); if (distX > (rect.width / 2 + circle.radius) || distY > (rect.height / 2 + circle.radius)) return false; if (distX <= (rect.width / 2) || distY <= (rect.height / 2)) return true; const dx = distX - rect.width / 2; const dy = distY - rect.height / 2; return (dx * dx + dy * dy <= (circle.radius * circle.radius)); }
+
+        function animate() {
+            requestAnimationFrame(animate); ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            if(isGameEnding) {
+                const anim = player.finalAnimationState; anim.y -= 0.5; anim.pulse = Math.sin(Date.now() / 300) * 40 + 50;
+                ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (1 - anim.alpha)})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                player.draw();
+                if (anim.alpha > 0) { anim.alpha -= 0.005; } 
+                else {
+                    isGameEnding = false;
+                    showMessage("Vitória!", anim.finalMessage, "Jogar Novamente", () => {
+                        mainMenu.classList.add('visible');
+                        hud.classList.remove('visible'); cooldownsHud.classList.remove('visible');
+                    });
+                }
+                return;
+            }
+
+            if (!game.level) return;
+
+            if (gameRunning) {
+                player.update(game.level.platforms, game.level.water);
+                enemies.forEach(e => e.update(player, game.level.platforms, noises));
+            }
+            
+            if (gameRunning || isLevelEnding) {
+                pings.forEach(p => p.update());
+                checkCollisionsAndReveal();
+            }
+
+            revealedObjects = revealedObjects.filter(ro => ro.draw());
+            game.level.water.forEach(w => w.draw());
+            game.level.acid.forEach(a => a.draw());
+            heartOfLight.draw(); player.draw(); enemies.forEach(e => e.draw()); loreOrbs.forEach(o => o.draw()); pings.forEach(p => p.draw()); 
+            pings = pings.filter(p => p.active); noises = noises.filter(n => Date.now() - n.creationTime < 100);
+            
+            if(gameRunning) updateHUD();
+        }
+        
+        function updateHUD() {
+            hud.textContent = `Fase ${currentLevelIndex + 1}: ${game.level.name}`;
+            qCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastShortPing) / player.shortPingCooldown) * 100)}%`;
+            eCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastLongPing) / player.longPingCooldown) * 100)}%`;
+        }
+        
+        function showMessage(title, text, buttonText, callback) {
+            messageTitle.textContent = title; messageText.textContent = text; messageOverlay.classList.add('visible');
+            const oldButton = document.getElementById('message-button'); const newButton = oldButton.cloneNode(true);
+            oldButton.parentNode.replaceChild(newButton, oldButton); newButton.textContent = buttonText;
+            newButton.addEventListener('click', async () => { await initAudio(); messageOverlay.classList.remove('visible'); callback(); }, { once: true });
+        }
+        
+        async function showLevelIntro(level) {
+            const staticInstructions = currentLevelIndex === 0 ? "Use [A/D] ou Setas, [Espaço] para pular. [Q] é um eco curto, [E] é um eco longo." : " ";
+            showMessage(level.name, "Carregando...", "✨ Iniciar Fase ✨", () => { gameRunning = true; });
+            preloadNextLevelDescription(currentLevelIndex + 1);
+            if (nextLevelDescription && nextLevelDescription !== 'loading' && nextLevelDescription !== 'final') {
+                messageText.textContent = `${nextLevelDescription}\n\n${staticInstructions}`;
+                nextLevelDescription = 'loading';
+            } else if (apiOperational) {
+                const prompt = `You are a cryptic narrator for 'Eco-Localizador'. Describe the level named '${level.name}'. It has ${level.enemies.length} creatures. ${level.water.length > 0 ? 'There is water.' : ''} Keep it short, atmospheric (2-3 sentences). No instructions. Respond in Portuguese.`;
+                const dynamicDescription = await callGemini(prompt);
+                messageText.textContent = `${dynamicDescription}\n\n${staticInstructions}`;
+            } else {
+                 messageText.textContent = `Você sente uma presença adiante.\n\n${staticInstructions}`;
+            }
+        }
+        
+        startGameButton.addEventListener('click', () => {
+            mainMenu.classList.remove('visible');
+            hud.classList.add('visible'); cooldownsHud.classList.add('visible');
+            currentLevelIndex = 0; 
+            nextLevelDescription = null; 
+            apiOperational = true; 
+            gameStartTime = Date.now();
+            game.loadLevel(currentLevelIndex);
+        });
+
+        optionsButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); optionsMenu.classList.add('visible'); });
+        creditsButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); creditsMenu.classList.add('visible'); });
+        backButtons.forEach(button => { button.addEventListener('click', () => { button.parentElement.classList.remove('visible'); mainMenu.classList.add('visible'); }); });
+        volumeSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            const dB = (value / 100) * 40 - 40;
+            Tone.Master.volume.value = dB > -40 ? dB : -Infinity;
+        });
+        
+        animate();
+    </script>
+</body>
+</html>
