@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eco-Localizador</title>
+    <title>Eco</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
         body {
@@ -91,7 +91,7 @@
         #main-menu {
             z-index: 20;
         }
-        #main-menu h1 {
+        #main-menu h1, #pause-menu h1 {
              font-size: 4em;
         }
         .menu-buttons {
@@ -225,7 +225,7 @@
             <button id="message-button"></button>
         </div>
         <div id="main-menu" class="overlay visible">
-             <h1>Eco-Localizador</h1>
+             <h1>Eco</h1>
              <p>A escuridão ouve cada passo seu.</p>
              <div class="menu-buttons">
                 <button id="start-game-button">Iniciar Aventura</button>
@@ -233,11 +233,23 @@
                 <button id="credits-button">Créditos</button>
              </div>
         </div>
+        <div id="pause-menu" class="overlay">
+            <h1>Jogo Pausado</h1>
+            <div class="menu-buttons">
+                <button id="resume-button">Continuar Jogo</button>
+                <button id="pause-options-button">Opções</button>
+                <button id="back-to-main-menu-button">Menu Principal</button>
+            </div>
+        </div>
         <div id="options-menu" class="overlay">
             <h1>Opções</h1>
             <div class="option-item">
-                <label for="volume-slider">Volume:</label>
-                <input type="range" id="volume-slider" min="0" max="100" value="100">
+                <label for="master-volume-slider">Volume Geral:</label>
+                <input type="range" id="master-volume-slider" min="0" max="100" value="100">
+            </div>
+            <div class="option-item">
+                <label for="music-volume-slider">Volume da Música:</label>
+                <input type="range" id="music-volume-slider" min="0" max="100" value="70">
             </div>
             <button class="back-button">Voltar</button>
         </div>
@@ -275,15 +287,23 @@
         const optionsButton = document.getElementById('options-button');
         const creditsButton = document.getElementById('credits-button');
         const backButtons = document.querySelectorAll('.back-button');
-        const volumeSlider = document.getElementById('volume-slider');
+        const masterVolumeSlider = document.getElementById('master-volume-slider');
+        const musicVolumeSlider = document.getElementById('music-volume-slider');
+
+        // Pause Menu elements
+        const pauseMenu = document.getElementById('pause-menu');
+        const resumeButton = document.getElementById('resume-button');
+        const pauseOptionsButton = document.getElementById('pause-options-button');
+        const backToMainMenuButton = document.getElementById('back-to-main-menu-button');
 
         let gameRunning = false;
         let currentLevelIndex = 0;
-        let nextLevelDescription = null;
+        let nextLevelDescription = null; // No longer used for dynamic description, but kept for clarity
         let isLevelEnding = false;
-        let isGameEnding = false; 
-        let gameStartTime = null; 
-        let apiOperational = true; 
+        let isGameEnding = false;
+        let gameStartTime = null;
+        let apiOperational = true; // Kept for potential future use of Gemini API, but not for story
+        let cameFromPauseMenu = false; // Flag to track if options opened from pause menu
 
         function resizeCanvas() {
             const container = document.querySelector('.game-container');
@@ -294,12 +314,15 @@
         resizeCanvas();
 
         // --- GEMINI API & OTIMIZAÇÃO ---
+        // Retained for potential future use, but no longer used for dynamic story/lore.
         async function callGemini(prompt) {
             if (!apiOperational) { return "O eco se perdeu no vazio..."; }
             loadingIndicator.classList.add('visible');
             document.getElementById('message-button').style.display = 'none';
             let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
             const payload = { contents: chatHistory };
+            // Certifique-se de que a chave API está configurada corretamente no seu ambiente
+            // Em um ambiente de produção, esta chave deve ser armazenada de forma segura e acessada pelo backend.
             const apiKey = "AIzaSyCTyrPIeOHFfdSsTx8ZNJvoBTVA0rf35fs";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
             try {
@@ -323,16 +346,6 @@
             }
         }
 
-        async function preloadNextLevelDescription(levelIndex) {
-            if (levelIndex >= levels.length || !apiOperational) {
-                nextLevelDescription = "final";
-                return;
-            }
-            const nextLevel = levels[levelIndex];
-            const prompt = `You are a cryptic, omniscient narrator for 'Eco-Localizador'. Describe the next area. The level is named '${nextLevel.name}'. It contains ${nextLevel.enemies.length} creatures. ${nextLevel.water.length > 0 ? 'There are pools of water here.' : ''} Keep it short, atmospheric, and mysterious (2-3 sentences). No instructions. Respond in Portuguese.`;
-            callGemini(prompt).then(desc => { nextLevelDescription = desc; });
-        }
-
         // --- ÁUDIO (TONE.JS) ---
         let audioReady = false;
         const sounds = {
@@ -346,14 +359,75 @@
             levelWinExplosion: new Tone.NoiseSynth({noise: {type: 'white'}, envelope: {attack: 0.1, decay: 1.5, sustain: 0}}).toDestination(),
             gameWin: new Tone.Synth({oscillator: {type: 'fatsawtooth'}, envelope: {attack: 0.5, decay: 2, sustain: 0.1, release: 1}}).toDestination(),
             gameOver: new Tone.MembraneSynth({ pitchDecay: 0.2, octaves: 8, envelope: { attack: 0.01, decay: 0.8, sustain: 0 } }).toDestination(),
-            lorePing: new Tone.PluckSynth({ attackNoise: 0.5, dampening: 8000, resonance: 0.9 }).toDestination(),
+            // lorePing removed
         };
-        async function initAudio() { if (audioReady) return; await Tone.start(); audioReady = true; }
+
+        // --- TRILHA SONORA AMBIENTE ---
+        const ambianceSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "sawtooth" },
+            envelope: { attack: 2, decay: 1, sustain: 0.5, release: 3 },
+            volume: -20 // Volume inicial para a música
+        }).toDestination();
+
+        const lowDrone = new Tone.FMSynth({
+            harmonicity: 0.5,
+            modulationIndex: 1,
+            envelope: { attack: 5, decay: 0.1, sustain: 1, release: 10 },
+            modulation: { type: "sine" },
+            detune: 0,
+            volume: -25 // Volume inicial
+        }).toDestination();
+
+        const shimmerReverb = new Tone.Reverb(5).toDestination();
+        const delay = new Tone.FeedbackDelay("8n", 0.5).toDestination();
+        const padSynth = new Tone.Synth({
+            oscillator: { type: "sine" },
+            envelope: { attack: 4, decay: 0, sustain: 1, release: 8 },
+            volume: -30
+        }).chain(delay, shimmerReverb, Tone.Destination);
+
+        let musicLoop = null;
+
+        function startAmbientMusic() {
+            if (musicLoop) return; // Garante que a música não seja iniciada múltiplas vezes
+            musicLoop = new Tone.Loop(time => {
+                // Toques sutis do pad synth
+                padSynth.triggerAttackRelease("C3", "16n", time);
+                padSynth.triggerAttackRelease("G2", "16n", time + 0.5);
+
+                // Baixo drone pulsante
+                lowDrone.triggerAttackRelease("C1", "4n", time + Math.random() * 2);
+
+                // Sons aleatórios e etéreos para a atmosfera
+                if (Math.random() < 0.2) { // 20% de chance de um som etéreo
+                    ambianceSynth.triggerAttackRelease(["C3", "Eb3", "G3"], "2n", time + Math.random() * 4);
+                }
+            }, "8n"); // Loop a cada 8 notas
+            musicLoop.start(0);
+            Tone.Transport.start();
+        }
+
+        function stopAmbientMusic() {
+            if (musicLoop) {
+                musicLoop.stop();
+                musicLoop.dispose();
+                musicLoop = null;
+            }
+            Tone.Transport.stop();
+        }
+
+        async function initAudio() {
+            if (audioReady) return;
+            await Tone.start();
+            audioReady = true;
+            startAmbientMusic(); // Inicia a música ambiente ao inicializar o áudio
+        }
 
         // --- CONTROLES ---
         const keys = { a: { pressed: false }, d: { pressed: false }, arrowLeft: { pressed: false }, arrowRight: { pressed: false }, w: { pressed: false }, arrowUp: { pressed: false }, space: { pressed: false } };
         window.addEventListener('keydown', (e) => {
-            if (!gameRunning) return;
+            if (!gameRunning && e.key !== 'Escape') return; // Allow Escape key even when game is not running (e.g., in pause menu)
+
             switch (e.key.toLowerCase()) {
                 case 'a': keys.a.pressed = true; break;
                 case 'd': keys.d.pressed = true; break;
@@ -362,10 +436,11 @@
                 case 'w': case 'arrowup': case ' ': if (!keys.space.pressed) { player.jump(); keys.space.pressed = true; } break;
                 case 'q': player.createPing('short'); break;
                 case 'e': player.createPing('long'); break;
+                case 'escape': togglePause(); break; // Toggle pause menu on Escape key
             }
         });
         window.addEventListener('keyup', (e) => {
-             switch (e.key.toLowerCase()) {
+            switch (e.key.toLowerCase()) {
                 case 'a': keys.a.pressed = false; break;
                 case 'd': keys.d.pressed = false; break;
                 case 'arrowleft': keys.arrowLeft.pressed = false; break;
@@ -521,7 +596,7 @@
                     }
                 }
                 if (Date.now() < player.revealTime) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer < 200) { this.state = 'chasing'; this.target = player.position; } }
-                
+
                 // Edge detection for patrol
                 if (this.state === 'patrol' && this.onGround) {
                     const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1;
@@ -544,12 +619,12 @@
             }
             reveal() { this.revealTime = Date.now() + 3000; }
         }
-        
+
         class RevealedObject {
             constructor(platform, duration) { this.platform = platform; this.revealTime = Date.now(); this.duration = duration; }
             draw() { const elapsed = Date.now() - this.revealTime; if (elapsed > this.duration) return false; const alpha = 1 - (elapsed / this.duration); this.platform.draw(alpha); return true; }
         }
-        
+
         class Platform {
             constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; }
             draw(alpha = 1) {
@@ -560,7 +635,9 @@
                 ctx.restore();
             }
         }
-        
+
+        // LoreOrb class removed
+        /*
         class LoreOrb {
             constructor(x, y) { this.x = x; this.y = y; this.radius = 12; this.triggered = false; this.revealTime = 0; }
             draw() {
@@ -581,6 +658,7 @@
                 });
             }
         }
+        */
 
         class HeartOfLight {
             constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; this.revealTime = 0; this.isAbsorbed = false; }
@@ -603,10 +681,10 @@
                 }, 1500);
             }
         }
-        
+
         class Water {
-             constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; }
-             draw() { ctx.fillStyle = 'rgba(0, 50, 150, 0.3)'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); }
+            constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; }
+            draw() { ctx.fillStyle = 'rgba(0, 50, 150, 0.3)'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); }
         }
 
         class AcidWater {
@@ -621,18 +699,19 @@
         }
 
         // --- DADOS DAS FASES ---
+        // ID: 001(criação fase)
         const levelData = [
             { name: "O Despertar", playerStart: { x: 50, y: 500 }, platforms: [ {x: 0, y: 580, w: 1000, h: 20}, {x: 250, y: 520, w: 150, h: 20}, {x: 500, y: 460, w: 150, h: 20}, {x: 300, y: 380, w: 100, h: 20}, {x: 500, y: 300, w: 200, h: 20} ], enemies: [], water: [], acid: [], loreOrbs: [], exit: { x: 650, y: 240, width: 50, height: 60 } },
-            { name: "Os Primeiros Ecos", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 150, y: 500, w: 100, h: 20 }, { x: 350, y: 440, w: 300, h: 20 }, { x: 750, y: 380, w: 100, h: 20 }, { x: 550, y: 300, w: 100, h: 20 }, { x: 200, y: 250, w: 250, h: 20 }, ], enemies: [ { x: 400, y: 395 }, { x: 220, y: 205 }, { x: 560, y: 255 } ], water: [], acid: [], loreOrbs: [ { x: 780, y: 360 } ], exit: { x: 220, y: 190, width: 50, height: 60 } },
-            { name: "A Caverna Inundada", playerStart: { x: 50, y: 200 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 0, y: 260, w: 200, h: 20 }, { x: 250, y: 350, w: 100, h: 20 }, { x: 400, y: 430, w: 10, h: 150 }, { x: 600, y: 450, w: 200, h: 20 }, ], enemies: [ { x: 100, y: 535 }, { x: 620, y: 405 }, { x: 260, y: 305 } ], water: [ { x: 0, y: 560, w: 400, h: 20 } ], acid: [{x: 410, y: 560, w: 190, h: 20}], loreOrbs: [ { x: 300, y: 330 } ], exit: { x: 750, y: 390, width: 50, height: 60 } },
-            { name: "A Fenda dos Sussurros", playerStart: { x: 80, y: 120 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 50, y: 180, w: 150, h: 20 }, { x: 300, y: 250, w: 100, h: 20 }, { x: 100, y: 350, w: 100, h: 20 }, { x: 250, y: 450, w: 100, h: 20 }, { x: 500, y: 500, w: 100, h: 20 }, { x: 650, y: 420, w: 100, h: 20 }, { x: 800, y: 340, w: 150, h: 20 }, { x: 600, y: 260, w: 100, h: 20 }, { x: 750, y: 180, w: 100, h: 20 }, { x: 900, y: 120, w: 100, h: 20 }, ], enemies: [ { x: 150, y: 535 }, { x: 810, y: 295 }, { x: 610, y: 215 }, { x: 110, y: 305}, { x: 260, y: 405} ], water: [], acid: [ { x: 450, y: 560, w: 400, h: 20 } ], loreOrbs: [ { x: 150, y: 330 } ], exit: { x: 925, y: 60, width: 50, height: 60 } },
+            { name: "Os Primeiros Ecos", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 150, y: 500, w: 100, h: 20 }, { x: 350, y: 440, w: 300, h: 20 }, { x: 750, y: 380, w: 100, h: 20 }, { x: 550, y: 300, w: 100, h: 20 }, { x: 200, y: 250, w: 250, h: 20 }, ], enemies: [ { x: 400, y: 395 }, { x: 220, y: 205 }, { x: 560, y: 255 } ], water: [], acid: [], loreOrbs: [], exit: { x: 220, y: 190, width: 50, height: 60 } },
+            { name: "A Caverna Inundada", playerStart: { x: 50, y: 200 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 0, y: 260, w: 200, h: 20 }, { x: 250, y: 350, w: 100, h: 20 }, { x: 400, y: 430, w: 10, h: 150 }, { x: 600, y: 450, w: 200, h: 20 }, ], enemies: [ { x: 100, y: 535 }, { x: 620, y: 405 }, { x: 260, y: 305 } ], water: [ { x: 0, y: 560, w: 400, h: 20 } ], acid: [{x: 410, y: 560, w: 190, h: 20}], loreOrbs: [], exit: { x: 750, y: 390, width: 50, height: 60 } },
+            { name: "A Fenda dos Sussurros", playerStart: { x: 80, y: 120 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 50, y: 180, w: 150, h: 20 }, { x: 300, y: 250, w: 100, h: 20 }, { x: 100, y: 350, w: 100, h: 20 }, { x: 250, y: 450, w: 100, h: 20 }, { x: 500, y: 500, w: 100, h: 20 }, { x: 650, y: 420, w: 100, h: 20 }, { x: 800, y: 340, w: 150, h: 20 }, { x: 600, y: 260, w: 100, h: 20 }, { x: 750, y: 180, w: 100, h: 20 }, { x: 900, y: 120, w: 100, h: 20 }, ], enemies: [ { x: 150, y: 535 }, { x: 810, y: 295 }, { x: 610, y: 215 }, { x: 110, y: 305}, { x: 260, y: 405} ], water: [], acid: [ { x: 450, y: 560, w: 400, h: 20 } ], loreOrbs: [], exit: { x: 925, y: 60, width: 50, height: 60 } },
             { name: "O Coração da Escuridão", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 850, y: 500, w: 150, h: 20 }, { x: 0, y: 420, w: 750, h: 20 }, { x: 200, y: 320, w: 150, h: 20 }, { x: 450, y: 150, w: 20, h: 100 }, { x: 550, y: 220, w: 200, h: 20 }, { x: 200, y: 150, w: 200, h: 20 }, ], enemies: [ { x: 300, y: 375 }, { x: 600, y: 175 }, { x: 100, y: 535 }, { x: 220, y: 105 }, { x: 880, y: 455}, { x: 650, y: 375} ], water: [], acid: [ { x: 750, y: 400, w: 100, h: 20}], loreOrbs: [], exit: { x: 250, y: 90, width: 50, height: 60 } }
         ];
 
         const levels = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)) }));
 
         // --- SISTEMA DE JOGO ---
-        let player, pings, enemies, loreOrbs, revealedObjects, noises, heartOfLight;
+        let player, pings, enemies, revealedObjects, noises, heartOfLight; // loreOrbs removed
 
         const game = {
             level: null,
@@ -641,7 +720,7 @@
                 this.level = { ...levels[levelIndex] };
                 player = new Player(); player.reset(this.level.playerStart.x, this.level.playerStart.y);
                 enemies = this.level.enemies.map(e => new Enemy(e.x, e.y));
-                loreOrbs = this.level.loreOrbs.map(o => new LoreOrb(o.x, o.y));
+                // loreOrbs removed from here
                 const exit = this.level.exit;
                 heartOfLight = new HeartOfLight(exit.x, exit.y, exit.width, exit.height);
                 pings = []; revealedObjects = []; noises = [];
@@ -650,7 +729,7 @@
             restartLevel: function() {
                 player.reset(this.level.playerStart.x, this.level.playerStart.y);
                 enemies.forEach(e => e.reset());
-                loreOrbs.forEach(o => o.triggered = false);
+                // loreOrbs.forEach(o => o.triggered = false); // Removed
                 pings = []; revealedObjects = []; noises = [];
                 const exit = this.level.exit;
                 heartOfLight = new HeartOfLight(exit.x, exit.y, exit.width, exit.height);
@@ -666,19 +745,19 @@
         };
 
         function createNoise(x, y, radius, intensity) { noises.push({x, y, radius, intensity, creationTime: Date.now()}); }
-        
+
         function checkCollisionsAndReveal() {
             if (isLevelEnding || isGameEnding) return;
 
             for (const ping of pings) {
                 for (const platform of game.level.platforms) { if (isCircleIntersectingRect(ping, platform)) { revealedObjects.push(new RevealedObject(platform, ping.duration)); } }
                 for (const enemy of enemies) { if (isCircleIntersectingRect(ping, enemy)) { enemy.reveal(); } }
-                for (const orb of loreOrbs) { if (!orb.triggered && isCircleIntersectingRect(ping, {position: {x: orb.x - orb.radius, y: orb.y - orb.radius}, width: orb.radius*2, height: orb.radius*2})) { orb.reveal(); orb.trigger(); } }
+                // loreOrbs revelation/triggering removed
                 if (isCircleIntersectingRect(ping, player)) { player.revealTime = Date.now() + ping.duration; }
                 if (isCircleIntersectingRect(ping, heartOfLight)) { heartOfLight.reveal(); }
             }
             if (Date.now() - player.spawnTime > 1000) {
-                 for (const enemy of enemies) {
+                for (const enemy of enemies) {
                     if (player.isCollidingWith(enemy)) {
                         gameRunning = false; sounds.gameOver.triggerAttackRelease("C1", "1s");
                         showMessage("Você foi Ouvido", "O silêncio era sua única defesa.", "Tentar Novamente", () => { game.restartLevel(); });
@@ -702,17 +781,18 @@
 
         function animate() {
             requestAnimationFrame(animate); ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+
             if(isGameEnding) {
                 const anim = player.finalAnimationState; anim.y -= 0.5; anim.pulse = Math.sin(Date.now() / 300) * 40 + 50;
                 ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (1 - anim.alpha)})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
                 player.draw();
-                if (anim.alpha > 0) { anim.alpha -= 0.005; } 
+                if (anim.alpha > 0) { anim.alpha -= 0.005; }
                 else {
                     isGameEnding = false;
                     showMessage("Vitória!", anim.finalMessage, "Jogar Novamente", () => {
                         mainMenu.classList.add('visible');
                         hud.classList.remove('visible'); cooldownsHud.classList.remove('visible');
+                        stopAmbientMusic(); // Ensure music stops on game over/win screen until a new game starts
                     });
                 }
                 return;
@@ -724,7 +804,7 @@
                 player.update(game.level.platforms, game.level.water);
                 enemies.forEach(e => e.update(player, game.level.platforms, noises));
             }
-            
+
             if (gameRunning || isLevelEnding) {
                 pings.forEach(p => p.update());
                 checkCollisionsAndReveal();
@@ -733,60 +813,115 @@
             revealedObjects = revealedObjects.filter(ro => ro.draw());
             game.level.water.forEach(w => w.draw());
             game.level.acid.forEach(a => a.draw());
-            heartOfLight.draw(); player.draw(); enemies.forEach(e => e.draw()); loreOrbs.forEach(o => o.draw()); pings.forEach(p => p.draw()); 
+            heartOfLight.draw(); player.draw(); enemies.forEach(e => e.draw()); /* loreOrbs.forEach(o => o.draw()); */ pings.forEach(p => p.draw());
             pings = pings.filter(p => p.active); noises = noises.filter(n => Date.now() - n.creationTime < 100);
-            
+
             if(gameRunning) updateHUD();
         }
-        
+
         function updateHUD() {
             hud.textContent = `Fase ${currentLevelIndex + 1}: ${game.level.name}`;
             qCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastShortPing) / player.shortPingCooldown) * 100)}%`;
             eCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastLongPing) / player.longPingCooldown) * 100)}%`;
         }
-        
+
         function showMessage(title, text, buttonText, callback) {
             messageTitle.textContent = title; messageText.textContent = text; messageOverlay.classList.add('visible');
             const oldButton = document.getElementById('message-button'); const newButton = oldButton.cloneNode(true);
             oldButton.parentNode.replaceChild(newButton, oldButton); newButton.textContent = buttonText;
             newButton.addEventListener('click', async () => { await initAudio(); messageOverlay.classList.remove('visible'); callback(); }, { once: true });
         }
-        
+
+        // Modified to remove dynamic story generation, now a placeholder
         async function showLevelIntro(level) {
-            const staticInstructions = currentLevelIndex === 0 ? "Use [A/D] ou Setas, [Espaço] para pular. [Q] é um eco curto, [E] é um eco longo." : " ";
-            showMessage(level.name, "Carregando...", "✨ Iniciar Fase ✨", () => { gameRunning = true; });
-            preloadNextLevelDescription(currentLevelIndex + 1);
-            if (nextLevelDescription && nextLevelDescription !== 'loading' && nextLevelDescription !== 'final') {
-                messageText.textContent = `${nextLevelDescription}\n\n${staticInstructions}`;
-                nextLevelDescription = 'loading';
-            } else if (apiOperational) {
-                const prompt = `You are a cryptic narrator for 'Eco-Localizador'. Describe the level named '${level.name}'. It has ${level.enemies.length} creatures. ${level.water.length > 0 ? 'There is water.' : ''} Keep it short, atmospheric (2-3 sentences). No instructions. Respond in Portuguese.`;
-                const dynamicDescription = await callGemini(prompt);
-                messageText.textContent = `${dynamicDescription}\n\n${staticInstructions}`;
-            } else {
-                 messageText.textContent = `Você sente uma presença adiante.\n\n${staticInstructions}`;
-            }
+            const staticInstructions = currentLevelIndex === 0 ? "Use [A/D] ou Setas, [Espaço] para pular. [Q] é um eco curto, [E] é um eco longo. Aperte [ESC] para pausar." : " ";
+            const placeholderText = "Os roteristas estão criando a história desta fase. Prepare-se para a aventura!";
+            showMessage(`Nível ${currentLevelIndex + 1}: ${level.name}`, `${placeholderText}\n\n${staticInstructions}`, "✨ Iniciar Fase ✨", () => { gameRunning = true; });
+            // Removed preloadNextLevelDescription and dynamic API call here
         }
-        
+
         startGameButton.addEventListener('click', () => {
             mainMenu.classList.remove('visible');
+            pauseMenu.classList.remove('visible'); // Ensure pause menu is hidden when starting a new game
             hud.classList.add('visible'); cooldownsHud.classList.add('visible');
-            currentLevelIndex = 0; 
-            nextLevelDescription = null; 
-            apiOperational = true; 
+            currentLevelIndex = 0;
+            nextLevelDescription = null;
+            apiOperational = true;
             gameStartTime = Date.now();
             game.loadLevel(currentLevelIndex);
         });
 
-        optionsButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); optionsMenu.classList.add('visible'); });
+        optionsButton.addEventListener('click', () => {
+            mainMenu.classList.remove('visible');
+            optionsMenu.classList.add('visible');
+            cameFromPauseMenu = false; // Came from main menu
+        });
         creditsButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); creditsMenu.classList.add('visible'); });
-        backButtons.forEach(button => { button.addEventListener('click', () => { button.parentElement.classList.remove('visible'); mainMenu.classList.add('visible'); }); });
-        volumeSlider.addEventListener('input', (e) => {
+
+        // Back button functionality
+        backButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                button.parentElement.classList.remove('visible');
+                if (cameFromPauseMenu) {
+                    pauseMenu.classList.add('visible'); // Go back to pause menu if came from there
+                } else {
+                    mainMenu.classList.add('visible'); // Go back to main menu otherwise
+                }
+                cameFromPauseMenu = false; // Reset flag
+            });
+        });
+
+        // Pause Menu Interactions
+        function togglePause() {
+            if (gameRunning) {
+                gameRunning = false;
+                pauseMenu.classList.add('visible');
+                stopAmbientMusic(); // Stop music when paused
+            } else if (pauseMenu.classList.contains('visible')) { // Only resume if pause menu is actually visible
+                gameRunning = true;
+                pauseMenu.classList.remove('visible');
+                startAmbientMusic(); // Resume music when unpaused
+            }
+        }
+
+        resumeButton.addEventListener('click', togglePause);
+
+        pauseOptionsButton.addEventListener('click', () => {
+            pauseMenu.classList.remove('visible');
+            optionsMenu.classList.add('visible');
+            cameFromPauseMenu = true; // Set flag as we are going to options from pause
+        });
+
+        backToMainMenuButton.addEventListener('click', () => {
+            stopAmbientMusic(); // Stop music
+            gameRunning = false; // Ensure game is stopped
+            pauseMenu.classList.remove('visible'); // Hide pause menu
+            mainMenu.classList.add('visible'); // Show main menu
+            hud.classList.remove('visible'); // Hide HUD
+            cooldownsHud.classList.remove('visible'); // Hide cooldowns
+            // No need to reset game state here, startGameButton will handle it.
+        });
+
+
+        // Controles de volume
+        masterVolumeSlider.addEventListener('input', (e) => {
             const value = parseFloat(e.target.value);
-            const dB = (value / 100) * 40 - 40;
+            const dB = (value / 100) * 40 - 40; // Mapeia 0-100 para -40dB a 0dB (ou -Infinity para 0)
             Tone.Master.volume.value = dB > -40 ? dB : -Infinity;
         });
-        
+
+        musicVolumeSlider.addEventListener('input', (e) => {
+            const value = parseFloat(e.target.value);
+            const dB = (value / 100) * 40 - 40; // Mapeia 0-100 para -40dB a 0dB (ou -Infinity para 0)
+            ambianceSynth.volume.value = dB > -40 ? dB : -Infinity;
+            lowDrone.volume.value = dB > -40 ? dB : -Infinity;
+            padSynth.volume.value = dB > -40 ? dB : -Infinity;
+        });
+
+        // Define os volumes iniciais
+        masterVolumeSlider.dispatchEvent(new Event('input'));
+        musicVolumeSlider.dispatchEvent(new Event('input'));
+
         animate();
     </script>
 </body>
