@@ -18,6 +18,17 @@
             height: 100vh;
             overflow: hidden;
         }
+        #glitch-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+            background: #000;
+            border-radius: 8px;
+        }
         .game-container {
             position: relative;
             width: 90vw;
@@ -27,8 +38,10 @@
             box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
             border: 1px solid rgba(0, 255, 255, 0.5);
             border-radius: 8px;
+            z-index: 1;
+            overflow: hidden;
         }
-        canvas {
+        canvas#gameCanvas {
             display: block;
             width: 100%;
             height: 100%;
@@ -89,15 +102,73 @@
             transform: scale(1.05);
         }
         #main-menu {
-            z-index: 20;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 100%;
+            min-height: 400px;
+            max-width: 90vw;
+            background: rgba(10, 20, 30, 0.95);
+            box-shadow: 10px 0 40px 0 rgba(0,255,255,0.15), 0 8px 32px 0 rgba(0,0,0,0.7);
+            border-radius: 0 20px 20px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 60px 30px 60px 40px;
+            gap: 30px;
+            transition: opacity 0.5s, transform 0.5s;
+            z-index: 30;
+            text-align: left;
         }
-        #main-menu h1, #pause-menu h1 {
-             font-size: 4em;
+        #main-menu h1 {
+            font-size: 3.2em;
+            margin: 0 0 10px 0;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff, 0 0 5px #ffffff;
+            letter-spacing: 2px;
+        }
+        #main-menu p {
+            font-size: 1.1em;
+            margin: 0 0 30px 0;
+            color: #bff;
+            text-shadow: 0 0 8px #00ffff44;
         }
         .menu-buttons {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 18px;
+            width: 100%;
+
+        }
+        #main-menu button {
+            width: 100%;
+            margin: 0;
+            padding: 14px 0;
+            font-size: 1.15em;
+            background: linear-gradient(90deg, #00ffff 60%, #0fffc0 100%);
+            border: none;
+            color: #000;
+            cursor: pointer;
+            border-radius: 6px;
+            box-shadow: 0 0 15px #00ffff;
+            transition: background 0.3s, color 0.3s, transform 0.2s;
+        }
+        #main-menu button:hover {
+            background: #fff;
+            color: #00aaaa;
+            transform: scale(1.04) translateX(6px);
+        }
+        .overlay:not(#main-menu) {
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            z-index: 10;
+        }
+        #main-menu h1, #pause-menu h1 {
+             font-size: 4em;
         }
         .option-item {
             display: flex;
@@ -202,6 +273,7 @@
 </head>
 <body>
     <div class="game-container">
+        <canvas id="glitch-bg"></canvas>
         <canvas id="gameCanvas"></canvas>
         <div id="hud"></div>
         <div id="cooldowns-hud">
@@ -452,6 +524,17 @@
         // --- ESTRUTURAS DO JOGO (Classes) ---
         const GRAVITY = 0.5;
 
+        // Carregar sprite do personagem
+        const playerSprite = new window.Image();
+        playerSprite.src = 'assets/player.png';
+        let playerSpriteLoaded = false;
+        playerSprite.onload = () => { playerSpriteLoaded = true; };
+        setTimeout(() => {
+            if (!playerSpriteLoaded) {
+                console.log('Atenção: Não foi possível carregar assets/player.png');
+            }
+        }, 2000);
+
         class Player {
             constructor() {
                 this.width = 22; this.height = 42; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
@@ -467,12 +550,23 @@
                 this.breathOffset = Math.sin(Date.now() / 400) * 0.5;
                 const alpha = (Date.now() < this.revealTime) ? 1 : 0.6;
                 const color = `rgba(255, 255, 255, ${alpha})`;
-                ctx.fillStyle = color;
-                if (alpha === 1) { ctx.shadowColor = 'rgba(255, 255, 255, 0.7)'; ctx.shadowBlur = 15; }
-                const x = this.position.x; const y = this.position.y + this.breathOffset; const w = this.width; const h = this.height;
-                ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + h); ctx.lineTo(x + w * 0.3, y + h * 0.5); ctx.quadraticCurveTo(x + w * 0.4, y + h * 0.4, x + w * 0.5, y + h * 0.4); ctx.quadraticCurveTo(x + w * 0.6, y + h * 0.4, x + w * 0.7, y + h * 0.5); ctx.lineTo(x + w * 0.7, y + h); ctx.closePath(); ctx.fill();
-                ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.4, 0, Math.PI * 2); ctx.fill();
-                if (alpha === 1) { ctx.shadowBlur = 0; }
+                ctx.save();
+                if (playerSpriteLoaded) {
+                    // Desenhar apenas o sprite centralizado, sem glitch
+                    ctx.globalAlpha = alpha;
+                    ctx.drawImage(
+                        playerSprite,
+                        0, 0, playerSprite.width, playerSprite.height,
+                        this.position.x, this.position.y + this.breathOffset, this.width, this.height
+                    );
+                } else {
+                    // Fallback: desenho vetorial
+                    ctx.fillStyle = color;
+                    if (alpha === 1) { ctx.shadowColor = 'rgba(255, 255, 255, 0.7)'; ctx.shadowBlur = 15; }
+                    const x = this.position.x; const y = this.position.y + this.breathOffset; const w = this.width; const h = this.height;
+                    ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + h); ctx.lineTo(x + w * 0.3, y + h * 0.5); ctx.quadraticCurveTo(x + w * 0.4, y + h * 0.4, x + w * 0.5, y + h * 0.4); ctx.quadraticCurveTo(x + w * 0.6, y + h * 0.4, x + w * 0.7, y + h * 0.5); ctx.lineTo(x + w * 0.7, y + h); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.4, 0, Math.PI * 2); ctx.fill(); if (alpha === 1) { ctx.shadowBlur = 0; }
+                }
+                ctx.restore();
             }
             drawWinAnimation() {
                 ctx.save();
@@ -849,6 +943,8 @@
             apiOperational = true;
             gameStartTime = Date.now();
             game.loadLevel(currentLevelIndex);
+            // Esconde o glitch-bg só após o fade do menu
+            setTimeout(updateGlitchBgVisibility, 500); // 500ms = tempo do transition do menu
         });
 
         optionsButton.addEventListener('click', () => {
@@ -922,7 +1018,97 @@
         masterVolumeSlider.dispatchEvent(new Event('input'));
         musicVolumeSlider.dispatchEvent(new Event('input'));
 
+        // --- GLITCH BG ---
+        const glitchBg = document.getElementById('glitch-bg');
+        const glitchCtx = glitchBg.getContext('2d');
+        function resizeGlitchBg() {
+            glitchBg.width = glitchBg.parentElement.clientWidth;
+            glitchBg.height = glitchBg.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeGlitchBg);
+        resizeGlitchBg();
+
+        // Mostrar ou esconder o glitch-bg conforme o menu principal
+        function updateGlitchBgVisibility() {
+            if (mainMenu.classList.contains('visible')) {
+                glitchBg.style.display = 'block';
+            } else {
+                glitchBg.style.display = 'none';
+            }
+        }
+        // Chamar sempre que o menu mudar
+        const observer = new MutationObserver(updateGlitchBgVisibility);
+        observer.observe(document.getElementById('main-menu'), { attributes: true, attributeFilter: ['class'] });
+        updateGlitchBgVisibility();
+
+        function drawGlitchPlayer() {
+            // Fundo preto
+            glitchCtx.save();
+            glitchCtx.globalAlpha = 1;
+            glitchCtx.fillStyle = '#000';
+            glitchCtx.fillRect(0, 0, glitchBg.width, glitchBg.height);
+            glitchCtx.restore();
+
+            if (!mainMenu.classList.contains('visible')) return;
+
+            // Linhas de glitch no fundo
+            for(let i=0; i<7; i++){
+                const y = Math.random() * glitchBg.height;
+                glitchCtx.save();
+                glitchCtx.globalAlpha = 0.08 + Math.random() * 0.08;
+                glitchCtx.fillStyle = Math.random() > 0.7 ? '#00ffff' : '#fff';
+                glitchCtx.fillRect(0, y, glitchBg.width, 1 + Math.random() * 2);
+                glitchCtx.restore();
+            }
+
+            // Desenhar apenas o sprite centralizado, sem glitch
+            if (playerSpriteLoaded) {
+                const w = playerSprite.width;
+                const h = playerSprite.height;
+                const scale = Math.min(glitchBg.width, glitchBg.height) / Math.max(w, h) * 0.7;
+
+                // Pega a largura do menu
+                const menuWidth = mainMenu.offsetWidth;
+                // Distância da borda do menu
+                const paddingLeft = 40;
+
+                // Centraliza o personagem na área útil, mas com padding à esquerda
+                const usableWidth = glitchBg.width - menuWidth - paddingLeft;
+                const centerX = menuWidth + paddingLeft + usableWidth / 2;
+
+                // Posição Y: pés do personagem no chão
+                const baseY = glitchBg.height;
+
+                glitchCtx.save();
+                glitchCtx.translate(centerX, baseY);
+                glitchCtx.scale(scale, scale);
+                glitchCtx.drawImage(playerSprite, -w/2, -h, w, h);
+                glitchCtx.restore();
+            }
+        }
+
+        function glitchBgLoop() {
+            drawGlitchPlayer();
+            if (mainMenu.classList.contains('visible')) {
+                requestAnimationFrame(glitchBgLoop);
+            }
+        }
+
+        // Sempre que o menu principal ficar visível, inicie o loop do glitch
+        const glitchMenuObserver = new MutationObserver(() => {
+            if (mainMenu.classList.contains('visible')) {
+                glitchBgLoop();
+            }
+        });
+        glitchMenuObserver.observe(mainMenu, { attributes: true, attributeFilter: ['class'] });
+
+        // Também chame uma vez ao carregar a página, se o menu estiver visível
+        if (mainMenu.classList.contains('visible')) {
+            glitchBgLoop();
+        }
+
         animate();
     </script>
 </body>
-</html>
+</html> 
+</html> 
