@@ -6,12 +6,14 @@
     <title>Eco</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
         body {
             margin: 0;
             padding: 0;
             background-color: #000000;
             color: #ffffff;
-            font-family: 'Courier New', Courier, monospace;
+            font-family: "Montserrat", sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -146,10 +148,11 @@
             width: 100%;
             margin: 0;
             padding: 14px 0;
+            font-weight: 550;
             font-size: 1.15em;
             background: linear-gradient(90deg, #00ffff 60%, #0fffc0 100%);
             border: none;
-            color: #000;
+            color: #141414;
             cursor: pointer;
             border-radius: 6px;
             box-shadow: 0 0 15px #00ffff;
@@ -330,12 +333,44 @@
             <button class="back-button">Voltar</button>
         </div>
         <div id="credits-menu" class="overlay">
-            <h1>Créditos</h1>
-            <p><strong>Desenvolvido por:</strong> Gemini & Você</p>
-            <p><strong>Conceito Original:</strong> Você</p>
-            <p><strong>Tecnologias:</strong> HTML, CSS, JavaScript, Tone.js</p>
-            <p><strong>Motor de Narrativa:</strong> Google Gemini API</p>
-            <button class="back-button">Voltar</button>
+            <div style="display: flex; flex-direction: column; align-items: center; width: 100%;">
+                <h1 style="margin: 0 0 18px 0; font-size: 2.5em; color: #00ffff; text-shadow: 0 0 10px #00ffff99;">Créditos</h1>
+                <span style="font-size: 1.2em; color: #00ffff; letter-spacing: 1px; margin-bottom: 8px;">Produzido por:</span>
+                <img src="assets/aura.png" alt="Logo Aura" style="height: 90px; margin-bottom: 18px; filter: drop-shadow(0 0 12px #9942d1);">
+                <div style="display: flex; flex-direction: column; gap: 22px; width: 100%; max-width: 400px;">
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #00ffff22; border-radius: 50%;">
+                            <!-- Ícone código -->
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                        </span>
+                        <div>
+                            <div style="font-weight: 600; color: #00ffff; font-size: 1.1em;">Programação</div>
+                            <div style="color: #fff;">Você e Enzo</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #00ffff22; border-radius: 50%;">
+                            <!-- Ícone livro -->
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19.5A2.5 2.5 0 0 1 4.5 17H20"/><path d="M2 6.5A2.5 2.5 0 0 1 4.5 4H20"/><path d="M20 22V2"/></svg>
+                        </span>
+                        <div>
+                            <div style="font-weight: 600; color: #00ffff; font-size: 1.1em;">História & Apoio</div>
+                            <div style="color: #fff;">Gaby e Yuri</div>
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 16px;">
+                        <span style="display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #00ffff22; border-radius: 50%;">
+                            <!-- Ícone engrenagem/tecnologia -->
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 16 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.09.29.14.59.14.9s-.05.61-.14.9z"/></svg>
+                        </span>
+                        <div>
+                            <div style="font-weight: 600; color: #00ffff; font-size: 1.1em;">Tecnologias</div>
+                            <div style="color: #fff;">HTML, CSS, JavaScript, Tone.js</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="back-button" style="margin-top: 32px;">Voltar</button>
+            </div>
         </div>
     </div>
 
@@ -536,7 +571,7 @@
         playerSprite.onload = () => { playerSpriteLoaded = true; };
         setTimeout(() => {
             if (!playerSpriteLoaded) {
-                console.log('Atenção: Não foi possível carregar assets/player.png');
+                console.log('Atenção: Não foi possível carregar o sprite do personagem; o jogo continuará, mas o personagem não aparecerá.');
             }
         }, 2000);
 
@@ -985,7 +1020,7 @@
         // Back button functionality
         backButtons.forEach(button => {
             button.addEventListener('click', () => {
-                button.parentElement.classList.remove('visible');
+                button.closest('.overlay').classList.remove('visible');
                 if (cameFromPauseMenu) {
                     pauseMenu.classList.add('visible'); // Go back to pause menu if came from there
                 } else {
