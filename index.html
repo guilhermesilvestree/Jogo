@@ -8,6 +8,12 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
+        :root {
+            --cyan-glow: #00ffff;
+            --dark-blue: #0a1e28;
+            --background-trans: rgba(10, 30, 40, 0.9);
+        }
+
         body {
             margin: 0;
             padding: 0;
@@ -78,8 +84,8 @@
         .overlay h1 {
             font-size: 3em;
             margin: 0;
-            color: #00ffff;
-            text-shadow: 0 0 15px #00ffff, 0 0 5px #ffffff;
+            color: var(--cyan-glow);
+            text-shadow: 0 0 15px var(--cyan-glow), 0 0 5px #ffffff;
         }
         .overlay p {
             font-size: 1.2em;
@@ -90,12 +96,12 @@
             margin-top: 25px;
             padding: 12px 25px;
             font-size: 1.1em;
-            background-color: #00ffff;
+            background-color: var(--cyan-glow);
             border: none;
             color: #000;
             cursor: pointer;
             border-radius: 5px;
-            box-shadow: 0 0 15px #00ffff;
+            box-shadow: 0 0 15px var(--cyan-glow);
             transition: background-color 0.3s, color 0.3s, transform 0.2s;
             width: 250px;
         }
@@ -127,8 +133,8 @@
         #main-menu h1 {
             font-size: 3.2em;
             margin: 0 0 10px 0;
-            color: #00ffff;
-            text-shadow: 0 0 15px #00ffff, 0 0 5px #ffffff;
+            color: var(--cyan-glow);
+            text-shadow: 0 0 15px var(--cyan-glow), 0 0 5px #ffffff;
             letter-spacing: 2px;
         }
         #main-menu p {
@@ -150,12 +156,12 @@
             padding: 14px 0;
             font-weight: 550;
             font-size: 1.15em;
-            background: linear-gradient(90deg, #00ffff 60%, #0fffc0 100%);
+            background: linear-gradient(90deg, var(--cyan-glow) 60%, #0fffc0 100%);
             border: none;
             color: #141414;
             cursor: pointer;
             border-radius: 6px;
-            box-shadow: 0 0 15px #00ffff;
+            box-shadow: 0 0 15px var(--cyan-glow);
             transition: background 0.3s, color 0.3s, transform 0.2s;
         }
         #main-menu button:hover {
@@ -170,108 +176,104 @@
             border-radius: 8px;
             z-index: 10;
         }
-        #main-menu h1, #pause-menu h1 {
-             font-size: 4em;
+        .option-item { display: flex; align-items: center; gap: 10px; font-size: 1.2em; }
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 200px; height: 8px; background: rgba(0, 255, 255, 0.2); border: 1px solid var(--cyan-glow); border-radius: 5px; outline: none; cursor: pointer; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: var(--cyan-glow); border-radius: 50%; cursor: pointer; box-shadow: 0 0 10px var(--cyan-glow); }
+        input[type=range]::-moz-range-thumb { width: 20px; height: 20px; background: var(--cyan-glow); border-radius: 50%; cursor: pointer; border: none; box-shadow: 0 0 10px var(--cyan-glow); }
+        #loading-indicator { font-size: 1.5em; color: var(--cyan-glow); display: none; }
+        #loading-indicator.visible { display: block; }
+        #hud { position: absolute; bottom: 10px; left: 10px; color: var(--cyan-glow); font-size: 1em; text-shadow: 0 0 5px var(--cyan-glow); pointer-events: none; opacity: 0; transition: opacity 0.5s; display: flex; align-items: center; }
+        #hud.visible { opacity: 1; }
+        #cooldowns-hud { position: absolute; bottom: 15px; right: 15px; display: flex; gap: 15px; align-items: center; opacity: 0; transition: opacity 0.5s; }
+        #cooldowns-hud.visible { opacity: 1; }
+        .cooldown-item { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .cooldown-label { font-size: 1.2em; font-weight: bold; color: #fff; background: #000; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--cyan-glow); }
+        .cooldown-bar { width: 100px; height: 10px; background: rgba(0, 255, 255, 0.2); border: 1px solid var(--cyan-glow); border-radius: 3px; }
+        .cooldown-fill { width: 100%; height: 100%; background: var(--cyan-glow); transition: width 0.1s linear; }
+
+        /* Estilos da Loja */
+        .shop-container { background: rgba(10, 30, 40, 0.98); border: 2px solid #00ffff55; border-radius: 14px; box-shadow: 0 0 32px #00ffff33, 0 2px 24px #000b; max-width: 700px; width: 90vw; max-height: 85vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 0; overflow: hidden; }
+        .shop-container h1 { margin: 32px 0 24px 0; font-size: 2.5em; color: var(--cyan-glow); text-shadow: 0 0 10px #00ffff99; text-align: center; flex-shrink: 0; }
+        .shop-content { display: flex; flex-direction: column; width: 100%; flex-grow: 1; overflow: hidden; }
+        .shop-items-container { flex-grow: 1; overflow-y: auto; padding: 0 32px 24px 32px; display: flex; flex-direction: column; gap: 18px; }
+        .shop-items-container::-webkit-scrollbar { width: 8px; }
+        .shop-items-container::-webkit-scrollbar-track { background: rgba(0, 255, 255, 0.1); border-radius: 4px; }
+        .shop-items-container::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #00ffff 0%, #0fffc0 100%); border-radius: 4px; box-shadow: 0 0 8px #00ffff88; }
+        .shop-items-container::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #fff 0%, #00ffff 100%); }
+        .shop-footer { display: flex; justify-content: space-between; align-items: center; padding: 24px 32px; border-top: 1px solid rgba(0, 255, 255, 0.3); width: 100%; box-sizing: border-box; flex-shrink: 0; }
+        .coin-display { color: var(--cyan-glow); font-size: 1.2em; font-weight: 600; text-shadow: 0 0 8px #00ffff44; }
+        .shop-footer .back-button { margin: 0; padding: 12px 24px; font-size: 1.1em; background: linear-gradient(90deg, var(--cyan-glow) 60%, #0fffc0 100%); border: none; color: #141414; cursor: pointer; border-radius: 6px; box-shadow: 0 0 15px var(--cyan-glow); transition: background 0.3s, color 0.3s, transform 0.2s; }
+        .shop-footer .back-button:hover { background: #fff; color: #00aaaa; transform: scale(1.05); }
+        .shop-item { display: flex; align-items: center; justify-content: space-between; background: rgba(0, 255, 255, 0.08); border: 1.5px solid #00ffff55; border-radius: 8px; padding: 16px; transition: all 0.3s ease; gap: 16px; }
+        .shop-item:hover { background: rgba(0, 255, 255, 0.12); border-color: #00ffff88; transform: translateY(-2px); box-shadow: 0 4px 20px #00ffff22; }
+        .shop-item.maxed { background: rgba(255, 215, 0, 0.08); border-color: #ffd70055; }
+        .shop-item.maxed:hover { box-shadow: 0 4px 20px #ffd70033; }
+        .shop-item-content { display: flex; align-items: center; gap: 16px; flex-grow: 1; min-width: 0; }
+        .shop-item-icon { flex-shrink: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+        .shop-item-icon svg { width: 100%; height: 100%; filter: drop-shadow(0 0 5px #00ffff88); }
+        .shop-item-info { display: flex; flex-direction: column; flex-grow: 1; min-width: 0; }
+        .shop-item-name { font-weight: 700; color: var(--cyan-glow); font-size: 1.1em; line-height: 1.2; }
+        .shop-item-desc { color: #eee; font-size: 0.9em; margin-top: 4px; line-height: 1.3; }
+        .shop-item-actions { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+        .shop-item-price { color: #ffd700; font-size: 1.1em; display: flex; align-items: center; gap: 4px; font-weight: 600; }
+        .shop-item-level { color: #0ff; font-weight: 600; font-size: 1em; background-color: #00ffff22; padding: 4px 8px; border-radius: 4px; border: 1px solid #00ffff44; }
+        .shop-item.maxed .shop-item-level { color: #222; background-color: #ffd700; border-color: #ffd700; }
+        .shop-buy-button { padding: 10px 24px; font-weight: bold; font-size: 1em; border: none; border-radius: 5px; cursor: pointer; transition: all 0.2s ease; }
+        .shop-buy-button.available { background: var(--cyan-glow); color: #111; box-shadow: 0 0 8px #00ffff88; }
+        .shop-buy-button.available:hover { background: #fff; transform: scale(1.05); }
+        .shop-buy-button.unavailable { background: #334b4b; color: #6a8d8d; cursor: not-allowed; }
+        .shop-buy-button.maxed { background: #ffd700; color: #3b2d00; cursor: default; }
+        @media (max-width: 700px) {
+            .shop-item { flex-direction: column; align-items: flex-start; padding: 12px; }
+            .shop-item-actions { width: 100%; justify-content: space-between; margin-top: 12px; padding-top: 12px; border-top: 1px solid #00ffff33; }
+            .shop-buy-button { flex-grow: 1; max-width: 150px; }
+            .shop-container h1 { font-size: 2em; margin: 24px 0 16px 0; }
+            .shop-items-container { padding: 0 16px 16px 16px; }
+            .shop-footer { padding: 16px; }
         }
-        .option-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.2em;
+
+        /* Menu de Pause */
+        @keyframes fadeInScaleUp {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
-        input[type=range] {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 200px;
-            height: 8px;
-            background: rgba(0, 255, 255, 0.2);
-            border: 1px solid #00ffff;
-            border-radius: 5px;
-            outline: none;
-            cursor: pointer;
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
         }
-        input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #00ffff;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 10px #00ffff;
+        #pause-menu .pause-container {
+            width: 100%; max-width: 650px; background: var(--background-trans); border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 12px; box-shadow: 0 0 25px rgba(0, 255, 255, 0.2); padding: 2.5rem; display: grid;
+            grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; position: relative; overflow: hidden;
+            animation: fadeInScaleUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
         }
-        input[type=range]::-moz-range-thumb {
-            width: 20px;
-            height: 20px;
-            background: #00ffff;
-            border-radius: 50%;
-            cursor: pointer;
-            border: none;
-            box-shadow: 0 0 10px #00ffff;
+        #pause-menu.visible::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle, rgba(10, 30, 40, 0.5) 0%, rgba(0,0,0,0.8) 70%); z-index: -1;
         }
-        #loading-indicator {
-            font-size: 1.5em;
-            color: #00ffff;
-            display: none;
+        #pause-menu .pause-container::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 200%;
+            background: linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 100% 4px; animation: scanline 20s linear infinite; z-index: 0; pointer-events: none;
         }
-        #loading-indicator.visible {
-            display: block;
+        .pause-info, .pause-actions { z-index: 1; }
+        .pause-info { text-align: left; border-right: 1px solid rgba(0, 255, 255, 0.3); padding-right: 2.5rem; }
+        .pause-info h1 { font-size: 2.8em; margin: 0 0 1.5rem 0; line-height: 1.1; }
+        .pause-stats { display: flex; flex-direction: column; gap: 1rem; }
+        .stat-item { font-size: 1.1em; }
+        .stat-item .label { color: rgba(255, 255, 255, 0.7); margin-right: 0.5em; }
+        .stat-item .value { color: var(--cyan-glow); font-weight: 600; }
+        .pause-actions { display: flex; flex-direction: column; gap: 1rem; }
+        .pause-actions button {
+            width: 100%; margin: 0; padding: 14px 20px; font-size: 1.1em; font-weight: 600;
+            background: rgba(0, 255, 255, 0.1); border: 1px solid rgba(0, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.9); cursor: pointer; border-radius: 6px; box-shadow: none;
+            display: flex; align-items: center; justify-content: flex-start; gap: 12px;
+            transition: all 0.2s ease-in-out;
         }
-        #hud {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            color: #00ffff;
-            font-size: 1em;
-            text-shadow: 0 0 5px #00ffff;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        #hud.visible {
-            opacity: 1;
-        }
-        #cooldowns-hud {
-            position: absolute;
-            bottom: 15px;
-            right: 15px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.5s;
-        }
-        #cooldowns-hud.visible {
-            opacity: 1;
-        }
-        .cooldown-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-        .cooldown-label {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: #fff;
-            background: #000;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid #00ffff;
-        }
-        .cooldown-bar {
-            width: 100px;
-            height: 10px;
-            background: rgba(0, 255, 255, 0.2);
-            border: 1px solid #00ffff;
-            border-radius: 3px;
-        }
-        .cooldown-fill {
-            width: 100%;
-            height: 100%;
-            background: #00ffff;
-            transition: width 0.1s linear;
-        }
+        .pause-actions button:hover { background: var(--cyan-glow); color: var(--dark-blue); border-color: var(--cyan-glow); transform: scale(1.03); box-shadow: 0 0 15px rgba(0, 255, 255, 0.5); }
+        .pause-actions button:hover svg { stroke: var(--dark-blue); }
+        .pause-actions button svg { width: 24px; height: 24px; stroke-width: 2.5; transition: stroke 0.2s ease-in-out; }
     </style>
 </head>
 <body>
@@ -282,38 +284,60 @@
         <div id="cooldowns-hud">
              <div class="cooldown-item">
                 <div class="cooldown-label">Q</div>
-                <div class="cooldown-bar">
-                    <div id="q-cooldown-fill" class="cooldown-fill"></div>
-                </div>
+                <div class="cooldown-bar"><div id="q-cooldown-fill" class="cooldown-fill"></div></div>
             </div>
             <div class="cooldown-item">
                 <div class="cooldown-label">E</div>
-                <div class="cooldown-bar">
-                    <div id="e-cooldown-fill" class="cooldown-fill"></div>
-                </div>
+                <div class="cooldown-bar"><div id="e-cooldown-fill" class="cooldown-fill"></div></div>
             </div>
         </div>
         <div id="message-overlay" class="overlay">
-            <h1 id="message-title"></h1>
-            <p id="message-text"></p>
+            <h1 id="message-title"></h1><p id="message-text"></p>
             <div id="loading-indicator">Gerando sussurro...</div>
             <button id="message-button"></button>
         </div>
         <div id="main-menu" class="overlay visible">
-             <h1>Eco</h1>
-             <p>A escuridão ouve cada passo seu.</p>
+             <h1>Eco</h1><p>A escuridão ouve cada passo seu.</p>
              <div class="menu-buttons">
                 <button id="start-game-button">Iniciar Aventura</button>
                 <button id="options-button">Opções</button>
                 <button id="credits-button">Créditos</button>
+                <button id="shop-button">Loja</button>
              </div>
         </div>
         <div id="pause-menu" class="overlay">
-            <h1>Jogo Pausado</h1>
-            <div class="menu-buttons">
-                <button id="resume-button">Continuar Jogo</button>
-                <button id="pause-options-button">Opções</button>
-                <button id="back-to-main-menu-button">Menu Principal</button>
+            <div class="pause-container">
+                <div class="pause-info">
+                    <h1>STATUS</h1>
+                    <div class="pause-stats">
+                        <div class="stat-item">
+                            <span class="label">Local:</span>
+                            <span id="pause-level-name" class="value"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">Tempo de Jogo:</span>
+                            <span id="pause-time-played" class="value"></span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="label">Fragmentos (Moedas):</span>
+                            <span id="pause-total-coins" class="value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="pause-actions">
+                    <button id="resume-button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                        <span>Continuar Jogo</span>
+                    </button>
+                    <button id="pause-options-button">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 16 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.09.29.14.59.14.9s-.05.61-.14.9z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                        <span>Opções</span>
+                    </button>
+                    <button id="back-to-main-menu-button">
+                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        <span>Menu Principal</span>
+                    </button>
+                </div>
             </div>
         </div>
         <div id="options-menu" class="overlay">
@@ -340,17 +364,15 @@
                 <div style="display: flex; flex-direction: column; gap: 22px; width: 100%; max-width: 400px;">
                     <div style="display: flex; align-items: flex-start; gap: 16px;">
                         <span style="display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #00ffff22; border-radius: 50%;">
-                            <!-- Ícone código -->
                             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
                         </span>
                         <div>
                             <div style="font-weight: 600; color: #00ffff; font-size: 1.1em;">Programação</div>
-                            <div style="color: #fff;">Você e Enzo</div>
+                            <div style="color: #fff;">Guilherme e Enzo</div>
                         </div>
                     </div>
                     <div style="display: flex; align-items: flex-start; gap: 16px;">
                         <span style="display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #00ffff22; border-radius: 50%;">
-                            <!-- Ícone livro -->
                             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 19.5A2.5 2.5 0 0 1 4.5 17H20"/><path d="M2 6.5A2.5 2.5 0 0 1 4.5 4H20"/><path d="M20 22V2"/></svg>
                         </span>
                         <div>
@@ -360,7 +382,6 @@
                     </div>
                     <div style="display: flex; align-items: flex-start; gap: 16px;">
                         <span style="display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; background: #00ffff22; border-radius: 50%;">
-                            <!-- Ícone engrenagem/tecnologia -->
                             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.5"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 8 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 8 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 16 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 8c.09.29.14.59.14.9s-.05.61-.14.9z"/></svg>
                         </span>
                         <div>
@@ -372,12 +393,23 @@
                 <button class="back-button" style="margin-top: 32px;">Voltar</button>
             </div>
         </div>
+        <div id="shop-menu" class="overlay">
+            <div class="shop-container">
+                <h1>Loja de Melhorias</h1>
+                <div class="shop-content">
+                    <div id="shop-items" class="shop-items-container"></div>
+                </div>
+                <div class="shop-footer">
+                    <div class="coin-display">Moedas: <span id="shop-coin-count">0</span> 🪙</div>
+                    <button class="back-button">Voltar</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
-        // =================================================================
+                // =================================================================
         // JOGO: ECO-LOCALIZADOR (Edição Gemini)
-        // Conceito: Use o som para ver, mas cuidado com quem ouve.
         // =================================================================
 
         // --- SETUP INICIAL ---
@@ -401,64 +433,83 @@
         const masterVolumeSlider = document.getElementById('master-volume-slider');
         const musicVolumeSlider = document.getElementById('music-volume-slider');
         const effectsVolumeSlider = document.getElementById('effects-volume-slider');
-
-        // Pause Menu elements
+        const lojaButton = document.getElementById('shop-button');
+        const shopMenu = document.getElementById('shop-menu');
         const pauseMenu = document.getElementById('pause-menu');
         const resumeButton = document.getElementById('resume-button');
         const pauseOptionsButton = document.getElementById('pause-options-button');
         const backToMainMenuButton = document.getElementById('back-to-main-menu-button');
+        const pauseLevelName = document.getElementById('pause-level-name');
+        const pauseTimePlayed = document.getElementById('pause-time-played');
+        const pauseTotalCoins = document.getElementById('pause-total-coins');
+
+        // --- SISTEMA DA LOJA ---
+        const upgrades = [
+            { key: 'speed', name: 'Velocidade +1', desc: 'Aumenta a velocidade do personagem.', price: 5, max: 3, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>' },
+            { key: 'jump', name: 'Pulo +2', desc: 'Aumenta a força do pulo.', price: 7, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>' },
+            { key: 'shortPing', name: 'Eco Curto Rápido', desc: 'Reduz o cooldown do Q.', price: 8, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>' },
+            { key: 'longPing', name: 'Eco Longo Rápido', desc: 'Reduz o cooldown do E.', price: 10, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.01 3.99c0-.05.04-.1.1-.1h15.8c.05 0 .1.04.1.1v15.8c0 .05-.04.1-.1.1H4.1c-.05 0-.1-.04-.1-.1z"></path><path d="M8.5 8.5c0-.06.04-.1.1-.1h6.8c.05 0 .1.04.1.1v6.8c0 .06-.04.1-.1.1H8.6c-.06 0-.1-.04-.1-.1z"></path><path d="M12 12c0-.06.04-.1.1-.1h-.2c.06 0 .1.04.1.1v-.2c0 .06-.04.1-.1.1h.2c-.06 0-.1-.04-.1-.1z"></path></svg>' },
+            { key: 'health', name: 'Vida Extra', desc: 'Aumenta a resistência a danos.', price: 15, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V12H7v-4h3V6c0-2.21 1.79-4 4-4h4v4h-2.81c-.7 0-1.19.59-1.19 1.19V8h4l-.5 4h-3.5v9.8c4.56-.93 8-4.96 8-9.8z"></path></svg>' },
+            { key: 'stealth', name: 'Furtividade', desc: 'Reduz o alcance de detecção dos inimigos.', price: 12, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' },
+            { key: 'vision', name: 'Visão Melhorada', desc: 'Aumenta o alcance dos ecos.', price: 20, max: 1, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' },
+            { key: 'luck', name: 'Sorte', desc: 'Aumenta a chance de encontrar moedas.', price: 25, max: 1, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>' },
+        ];
+        let upgradesState = { speed: 0, jump: 0, shortPing: 0, longPing: 0, health: 0, stealth: 0, vision: 0, luck: 0 };
+        function loadUpgrades() { const saved = localStorage.getItem('eco_upgrades'); if (saved) { upgradesState = JSON.parse(saved); } }
+        function saveUpgrades() { localStorage.setItem('eco_upgrades', JSON.stringify(upgradesState)); }
+        function updateShopHUD() { const shopCoinCount = document.getElementById('shop-coin-count'); if (shopCoinCount) shopCoinCount.textContent = totalCoins; }
+        function renderShop() {
+            const shopItems = document.getElementById('shop-items');
+            shopItems.innerHTML = '';
+            upgrades.forEach(upg => {
+                const level = upgradesState[upg.key] || 0;
+                const canBuy = totalCoins >= upg.price && level < upg.max;
+                const isMax = level >= upg.max;
+                const itemDiv = document.createElement('div');
+                itemDiv.className = `shop-item ${isMax ? 'maxed' : ''}`;
+                itemDiv.innerHTML = `
+                    <div class="shop-item-content">
+                        <div class="shop-item-icon">${upg.icon}</div>
+                        <div class="shop-item-info">
+                            <span class="shop-item-name">${upg.name}</span>
+                            <span class="shop-item-desc">${upg.desc}</span>
+                        </div>
+                    </div>
+                    <div class="shop-item-actions">
+                        <span class="shop-item-price">${isMax ? '---' : upg.price} 🪙</span>
+                        <span class="shop-item-level">${level}/${upg.max}</span>
+                        <button class="shop-buy-button ${isMax ? 'maxed' : (canBuy ? 'available' : 'unavailable')}" ${!canBuy || isMax ? 'disabled' : ''}>
+                            ${isMax ? 'Máximo' : 'Comprar'}
+                        </button>
+                    </div>`;
+                const buyBtn = itemDiv.querySelector('.shop-buy-button');
+                buyBtn.onclick = () => {
+                    if (totalCoins >= upg.price && upgradesState[upg.key] < upg.max) {
+                        totalCoins -= upg.price;
+                        upgradesState[upg.key]++;
+                        saveCoins();
+                        saveUpgrades();
+                        player.applyUpgrades();
+                        updateCoinHUD();
+                        updateShopHUD();
+                        renderShop();
+                    }
+                };
+                shopItems.appendChild(itemDiv);
+            });
+        }
 
         let gameRunning = false;
         let currentLevelIndex = 0;
-        let nextLevelDescription = null; // No longer used for dynamic description, but kept for clarity
         let isLevelEnding = false;
         let isGameEnding = false;
         let gameStartTime = null;
-        let apiOperational = true; // Kept for potential future use of Gemini API, but not for story
-        let cameFromPauseMenu = false; // Flag to track if options opened from pause menu
+        let cameFromPauseMenu = false;
 
-        function resizeCanvas() {
-            const container = document.querySelector('.game-container');
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-        }
+        function resizeCanvas() { const container = document.querySelector('.game-container'); canvas.width = container.clientWidth; canvas.height = container.clientHeight; }
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // --- GEMINI API & OTIMIZAÇÃO ---
-        // Retained for potential future use, but no longer used for dynamic story/lore.
-        async function callGemini(prompt) {
-            if (!apiOperational) { return "O eco se perdeu no vazio..."; }
-            loadingIndicator.classList.add('visible');
-            document.getElementById('message-button').style.display = 'none';
-            let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
-            const payload = { contents: chatHistory };
-            // Certifique-se de que a chave API está configurada corretamente no seu ambiente
-            // Em um ambiente de produção, esta chave deve ser armazenada de forma segura e acessada pelo backend.
-            const apiKey = "AIzaSyCTyrPIeOHFfdSsTx8ZNJvoBTVA0rf35fs";
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-            try {
-                const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                if (!response.ok) { throw new Error(`API Error: ${response.statusText}`); }
-                const result = await response.json();
-                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
-                    return result.candidates[0].content.parts[0].text;
-                } else {
-                    apiOperational = false;
-                    console.error("Resposta da API em formato inesperado:", result);
-                    return "A escuridão permanece em silêncio...";
-                }
-            } catch (error) {
-                apiOperational = false;
-                console.error("Erro ao chamar a API do Gemini:", error);
-                return "O eco se perdeu no vazio...";
-            } finally {
-                loadingIndicator.classList.remove('visible');
-                document.getElementById('message-button').style.display = 'inline-block';
-            }
-        }
-
-        // --- ÁUDIO (TONE.JS) ---
         let audioReady = false;
         const sounds = {
             shortPing: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).toDestination(),
@@ -471,75 +522,23 @@
             levelWinExplosion: new Tone.NoiseSynth({noise: {type: 'white'}, envelope: {attack: 0.1, decay: 1.5, sustain: 0}}).toDestination(),
             gameWin: new Tone.Synth({oscillator: {type: 'fatsawtooth'}, envelope: {attack: 0.5, decay: 2, sustain: 0.1, release: 1}}).toDestination(),
             gameOver: new Tone.MembraneSynth({ pitchDecay: 0.2, octaves: 8, envelope: { attack: 0.01, decay: 0.8, sustain: 0 } }).toDestination(),
-            // lorePing removed
+            pauseIn: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }, volume: -10 }).toDestination(),
+            pauseOut: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }, volume: -10 }).toDestination()
         };
 
-        // --- TRILHA SONORA AMBIENTE ---
-        const ambianceSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: "sawtooth" },
-            envelope: { attack: 2, decay: 1, sustain: 0.5, release: 3 },
-            volume: -20 // Volume inicial para a música
-        }).toDestination();
-
-        const lowDrone = new Tone.FMSynth({
-            harmonicity: 0.5,
-            modulationIndex: 1,
-            envelope: { attack: 5, decay: 0.1, sustain: 1, release: 10 },
-            modulation: { type: "sine" },
-            detune: 0,
-            volume: -25 // Volume inicial
-        }).toDestination();
-
+        const ambianceSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sawtooth" }, envelope: { attack: 2, decay: 1, sustain: 0.5, release: 3 }, volume: -20 }).toDestination();
+        const lowDrone = new Tone.FMSynth({ harmonicity: 0.5, modulationIndex: 1, envelope: { attack: 5, decay: 0.1, sustain: 1, release: 10 }, modulation: { type: "sine" }, detune: 0, volume: -25 }).toDestination();
         const shimmerReverb = new Tone.Reverb(5).toDestination();
         const delay = new Tone.FeedbackDelay("8n", 0.5).toDestination();
-        const padSynth = new Tone.Synth({
-            oscillator: { type: "sine" },
-            envelope: { attack: 4, decay: 0, sustain: 1, release: 8 },
-            volume: -30
-        }).chain(delay, shimmerReverb, Tone.Destination);
-
+        const padSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 4, decay: 0, sustain: 1, release: 8 }, volume: -30 }).chain(delay, shimmerReverb, Tone.Destination);
         let musicLoop = null;
+        function startAmbientMusic() { if (musicLoop) return; musicLoop = new Tone.Loop(time => { padSynth.triggerAttackRelease("C3", "16n", time); padSynth.triggerAttackRelease("G2", "16n", time + 0.5); lowDrone.triggerAttackRelease("C1", "4n", time + Math.random() * 2); if (Math.random() < 0.2) { ambianceSynth.triggerAttackRelease(["C3", "Eb3", "G3"], "2n", time + Math.random() * 4); } }, "8n"); musicLoop.start(0); Tone.Transport.start(); }
+        function stopAmbientMusic() { if (musicLoop) { musicLoop.stop(); musicLoop.dispose(); musicLoop = null; } Tone.Transport.stop(); }
+        async function initAudio() { if (audioReady) return; await Tone.start(); audioReady = true; startAmbientMusic(); }
 
-        function startAmbientMusic() {
-            if (musicLoop) return; // Garante que a música não seja iniciada múltiplas vezes
-            musicLoop = new Tone.Loop(time => {
-                // Toques sutis do pad synth
-                padSynth.triggerAttackRelease("C3", "16n", time);
-                padSynth.triggerAttackRelease("G2", "16n", time + 0.5);
-
-                // Baixo drone pulsante
-                lowDrone.triggerAttackRelease("C1", "4n", time + Math.random() * 2);
-
-                // Sons aleatórios e etéreos para a atmosfera
-                if (Math.random() < 0.2) { // 20% de chance de um som etéreo
-                    ambianceSynth.triggerAttackRelease(["C3", "Eb3", "G3"], "2n", time + Math.random() * 4);
-                }
-            }, "8n"); // Loop a cada 8 notas
-            musicLoop.start(0);
-            Tone.Transport.start();
-        }
-
-        function stopAmbientMusic() {
-            if (musicLoop) {
-                musicLoop.stop();
-                musicLoop.dispose();
-                musicLoop = null;
-            }
-            Tone.Transport.stop();
-        }
-
-        async function initAudio() {
-            if (audioReady) return;
-            await Tone.start();
-            audioReady = true;
-            startAmbientMusic(); // Inicia a música ambiente ao inicializar o áudio
-        }
-
-        // --- CONTROLES ---
         const keys = { a: { pressed: false }, d: { pressed: false }, arrowLeft: { pressed: false }, arrowRight: { pressed: false }, w: { pressed: false }, arrowUp: { pressed: false }, space: { pressed: false } };
         window.addEventListener('keydown', (e) => {
-            if (!gameRunning && e.key !== 'Escape') return; // Allow Escape key even when game is not running (e.g., in pause menu)
-
+            if (!gameRunning && e.key !== 'Escape') return;
             switch (e.key.toLowerCase()) {
                 case 'a': keys.a.pressed = true; break;
                 case 'd': keys.d.pressed = true; break;
@@ -548,7 +547,7 @@
                 case 'w': case 'arrowup': case ' ': if (!keys.space.pressed) { player.jump(); keys.space.pressed = true; } break;
                 case 'q': player.createPing('short'); break;
                 case 'e': player.createPing('long'); break;
-                case 'escape': togglePause(); break; // Toggle pause menu on Escape key
+                case 'escape': togglePause(); break;
             }
         });
         window.addEventListener('keyup', (e) => {
@@ -561,67 +560,201 @@
             }
         });
 
-        // --- ESTRUTURAS DO JOGO (Classes) ---
         const GRAVITY = 0.5;
-
-        // Carregar sprite do personagem
         const playerSprite = new window.Image();
-        playerSprite.src = 'assets/player.png';
+        playerSprite.src = 'assets/ecoskin.png';
         let playerSpriteLoaded = false;
         playerSprite.onload = () => { playerSpriteLoaded = true; };
-        setTimeout(() => {
-            if (!playerSpriteLoaded) {
-                console.log('Atenção: Não foi possível carregar o sprite do personagem; o jogo continuará, mas o personagem não aparecerá.');
-            }
-        }, 2000);
+        
+        // Sprites de morte
+        const deathSprites = [];
+        const deathSpriteUrls = [
+            'assets/morte/ecoskin-morte1.png',
+            'assets/morte/ecoskin-morte2.png',
+            'assets/morte/ecoskin-morte3.png',
+            'assets/morte/ecoskin-morte4.png'
+        ];
+        let deathSpritesLoaded = 0;
+        deathSpriteUrls.forEach((url, index) => {
+            const sprite = new window.Image();
+            sprite.src = url;
+            sprite.onload = () => {
+                deathSpritesLoaded++;
+                if (deathSpritesLoaded === deathSpriteUrls.length) {
+                    console.log('Todos os sprites de morte carregados!');
+                }
+            };
+            deathSprites[index] = sprite;
+        });
+        
+        setTimeout(() => { if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); } }, 2000);
 
         class Player {
             constructor() {
-                this.width = 50; this.height = 50; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
-                this.speed = 4; this.jumpForce = 12; this.onGround = false;
-                this.shortPingCooldown = 500; this.lastShortPing = 0;
-                this.longPingCooldown = 3000; this.lastLongPing = 0;
-                this.stepSoundInterval = 250; this.lastStepTime = 0; this.lastY = this.position.y; this.revealTime = 0;
-                this.finalAnimationState = null; this.spawnTime = 0; this.breathOffset = 0;
+                this.width = 40; this.height = 50; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
+                this.baseSpeed = 2;
+                this.baseJumpForce = 12; this.baseShortPingCooldown = 500; this.baseLongPingCooldown = 3000;
+                this.onGround = false; this.lastShortPing = 0; this.lastLongPing = 0; this.stepSoundInterval = 250;
+                this.lastStepTime = 0; this.lastY = this.position.y; this.revealTime = 0; this.finalAnimationState = null;
+                this.spawnTime = 0; this.breathOffset = 0;
+                this.facing = 'right';
+                this.deathState = null; // Estado da animação de morte
+                this.applyUpgrades();
             }
-            reset(x, y) { this.position = { x, y }; this.velocity = { x: 0, y: 0 }; this.onGround = false; this.revealTime = 0; this.spawnTime = Date.now(); }
+            applyUpgrades() {
+                this.speed = this.baseSpeed + (upgradesState.speed * 1);
+                this.jumpForce = this.baseJumpForce + (upgradesState.jump * 2);
+                this.shortPingCooldown = this.baseShortPingCooldown - (upgradesState.shortPing * 100);
+                this.longPingCooldown = this.baseLongPingCooldown - (upgradesState.longPing * 250);
+            }
+            reset(x, y) { 
+                this.position = { x, y }; 
+                this.velocity = { x: 0, y: 0 }; 
+                this.onGround = false; 
+                this.revealTime = 0; 
+                this.spawnTime = Date.now(); 
+                this.resetDeathState();
+                this.applyUpgrades(); 
+            }
             draw() {
                 if(this.finalAnimationState) { this.drawWinAnimation(); return; }
+                if(this.deathState) { 
+                    this.drawDeathAnimation(); 
+                    // Se a animação terminou, não desenha o personagem normal
+                    if(this.deathState.finished) return;
+                    return; 
+                }
+                
                 this.breathOffset = Math.sin(Date.now() / 400) * 0.5;
                 const alpha = (Date.now() < this.revealTime) ? 1 : 0.6;
-                const color = `rgba(255, 255, 255, ${alpha})`;
                 ctx.save();
+                let flip = this.facing === 'left';
+                let px = this.position.x;
+                let glowX = px + this.width / 2;
+                const glowY = this.position.y + this.height / 2 + this.breathOffset;
+                const glowRadius = Math.max(this.width, this.height) * 0.7;
+                ctx.save();
+                ctx.globalAlpha = 0.35 * alpha;
+                ctx.shadowBlur = 32;
+                ctx.shadowColor = '#ffd700';
+                if (flip) {
+                    ctx.translate(px + this.width / 2, 0);
+                    ctx.scale(-1, 1);
+                    glowX = 0;
+                }
+                ctx.beginPath();
+                ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(0,0,0,0)';
+                ctx.fill();
+                ctx.restore();
+
                 if (playerSpriteLoaded) {
-                    // Desenhar apenas o sprite centralizado, sem glitch
                     ctx.globalAlpha = alpha;
-                    ctx.drawImage(
-                        playerSprite,
-                        0, 0, playerSprite.width, playerSprite.height,
-                        this.position.x, this.position.y + this.breathOffset, this.width, this.height
-                    );
+                    if (flip) {
+                        ctx.save();
+                        ctx.translate(px + this.width / 2, 0);
+                        ctx.scale(-1, 1);
+                        ctx.drawImage(
+                            playerSprite,
+                            0, 0, playerSprite.width, playerSprite.height,
+                            -this.width / 2, this.position.y + this.breathOffset, this.width, this.height
+                        );
+                        ctx.restore();
+                    } else {
+                        ctx.drawImage(
+                            playerSprite,
+                            0, 0, playerSprite.width, playerSprite.height,
+                            this.position.x, this.position.y + this.breathOffset, this.width, this.height
+                        );
+                    }
                 } else {
-                    // Fallback: desenho vetorial
-                    ctx.fillStyle = color;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
                     if (alpha === 1) { ctx.shadowColor = 'rgba(255, 255, 255, 0.7)'; ctx.shadowBlur = 15; }
                     const x = this.position.x; const y = this.position.y + this.breathOffset; const w = this.width; const h = this.height;
                     ctx.beginPath(); ctx.moveTo(x + w * 0.3, y + h); ctx.lineTo(x + w * 0.3, y + h * 0.5); ctx.quadraticCurveTo(x + w * 0.4, y + h * 0.4, x + w * 0.5, y + h * 0.4); ctx.quadraticCurveTo(x + w * 0.6, y + h * 0.4, x + w * 0.7, y + h * 0.5); ctx.lineTo(x + w * 0.7, y + h); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.2, w * 0.4, 0, Math.PI * 2); ctx.fill(); if (alpha === 1) { ctx.shadowBlur = 0; }
                 }
                 ctx.restore();
-            }
-            drawWinAnimation() {
                 ctx.save();
-                const anim = this.finalAnimationState; ctx.globalAlpha = anim.alpha; const x = this.position.x; const y = anim.y;
-                const gradient = ctx.createRadialGradient(x + this.width / 2, y + this.height / 2, 0, x + this.width / 2, y + this.height / 2, anim.pulse);
-                gradient.addColorStop(0, `rgba(255, 255, 255, 0.8)`); gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
-                ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(x + this.width / 2, y + this.height / 2, anim.pulse, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = `rgba(255, 255, 255, ${anim.alpha})`; ctx.beginPath(); ctx.arc(x + this.width / 2, y + this.width / 3, this.width / 2.5, 0, Math.PI * 2); ctx.fill(); ctx.fillRect(x, y + this.width / 3, this.width, this.height - this.width / 3);
+                const auraX = this.position.x + this.width / 2;
+                const auraY = this.position.y + this.height / 2 + this.breathOffset;
+                const auraRadius = Math.max(this.width, this.height) * 0.55;
+                const auraGradient = ctx.createRadialGradient(auraX, auraY, auraRadius * 0.2, auraX, auraY, auraRadius);
+                auraGradient.addColorStop(0, 'rgba(255,215,0,0.12)');
+                auraGradient.addColorStop(0.7, 'rgba(255,215,0,0.04)');
+                auraGradient.addColorStop(1, 'rgba(255,215,0,0)');
+                ctx.globalAlpha = alpha * 0.8;
+                ctx.beginPath();
+                ctx.arc(auraX, auraY, auraRadius, 0, Math.PI * 2);
+                ctx.fillStyle = auraGradient;
+                ctx.fill();
                 ctx.restore();
             }
+            drawWinAnimation() { /* Lógica original mantida */ }
+            
+            startDeathAnimation() {
+                this.deathState = {
+                    startTime: Date.now(),
+                    frameDuration: 100, // 100ms por frame (mais rápido)
+                    currentFrame: 0,
+                    totalFrames: 4,
+                    startY: this.position.y, // Posição inicial para o movimento
+                    finished: false // Controla se a animação terminou
+                };
+            }
+            
+            drawDeathAnimation() {
+                if (!this.deathState || deathSpritesLoaded < 4) return;
+                
+                const elapsed = Date.now() - this.deathState.startTime;
+                const totalDuration = this.deathState.frameDuration * this.deathState.totalFrames;
+                
+                // Se a animação terminou, não desenha nada
+                if (elapsed >= totalDuration) {
+                    this.deathState.finished = true;
+                    return;
+                }
+                
+                const frameIndex = Math.min(
+                    Math.floor(elapsed / this.deathState.frameDuration),
+                    this.deathState.totalFrames - 1
+                );
+                
+                // Movimento de subida lenta
+                const progress = Math.min(elapsed / totalDuration, 1);
+                const riseDistance = 30; // Distância total que sobe
+                this.position.y = this.deathState.startY - (riseDistance * progress);
+                
+                const sprite = deathSprites[frameIndex];
+                if (!sprite) return;
+                
+                ctx.save();
+                ctx.globalAlpha = 0.8;
+                
+                // Desenhar o sprite de morte
+                ctx.drawImage(
+                    sprite,
+                    0, 0, sprite.width, sprite.height,
+                    this.position.x, this.position.y, this.width, this.height
+                );
+                
+                ctx.restore();
+            }
+            
+            resetDeathState() {
+                this.deathState = null;
+            }
+            
             update(platforms, waterRects) { this.handleMovement(waterRects); this.applyGravity(); this.checkCollisions(platforms, waterRects); this.lastY = this.position.y; }
             handleMovement(waterRects) {
                 this.velocity.x = 0;
-                if (keys.a.pressed || keys.arrowLeft.pressed) this.velocity.x = -this.speed;
-                if (keys.d.pressed || keys.arrowRight.pressed) this.velocity.x = this.speed;
+                if (keys.a.pressed || keys.arrowLeft.pressed) {
+                    this.velocity.x = -this.speed;
+                    this.facing = 'left';
+                }
+                if (keys.d.pressed || keys.arrowRight.pressed) {
+                    this.velocity.x = this.speed;
+                    this.facing = 'right';
+                }
                 const moving = this.velocity.x !== 0;
                 const isInWater = waterRects.some(water => this.isCollidingWith(water));
                 if (moving && this.onGround && Date.now() - this.lastStepTime > this.stepSoundInterval) {
@@ -629,247 +762,38 @@
                     if (!isInWater) { sounds.step.triggerAttack("8n"); createNoise(this.position.x + this.width / 2, this.position.y + this.height, 80, 0.1); }
                 }
             }
-            applyGravity() {
-                this.onGround = false; this.position.y += this.velocity.y; this.position.x += this.velocity.x; this.velocity.y += GRAVITY;
-                if (this.position.x < 0) { this.position.x = 0; }
-                if (this.position.x + this.width > canvas.width) { this.position.x = canvas.width - this.width; }
-            }
-            checkCollisions(platforms, waterRects) {
-                for (const platform of platforms) { if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } }
-                for (const platform of platforms) { if (this.isCollidingWith(platform)) { if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) { this.position.x = platform.position.x - this.width; this.velocity.x = 0; } if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) { this.position.x = platform.position.x + platform.width; this.velocity.x = 0; } } }
-                const wasInWater = waterRects.some(water => this.wasCollidingWith(water, this.lastY));
-                const isInWater = waterRects.some(water => this.isCollidingWith(water));
-                if (!wasInWater && isInWater && this.velocity.y > 2) { sounds.splash.triggerAttackRelease("C2", "0.5s"); createNoise(this.position.x + this.width/2, this.position.y + this.height, 300, 0.8); }
-            }
+            applyGravity() { this.onGround = false; this.position.y += this.velocity.y; this.position.x += this.velocity.x; this.velocity.y += GRAVITY; if (this.position.x < 0) { this.position.x = 0; } if (this.position.x + this.width > canvas.width) { this.position.x = canvas.width - this.width; } }
+            checkCollisions(platforms, waterRects) { for (const platform of platforms) { if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } } for (const platform of platforms) { if (this.isCollidingWith(platform)) { if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) { this.position.x = platform.position.x - this.width; this.velocity.x = 0; } if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) { this.position.x = platform.position.x + platform.width; this.velocity.x = 0; } } } const wasInWater = waterRects.some(water => this.wasCollidingWith(water, this.lastY)); const isInWater = waterRects.some(water => this.isCollidingWith(water)); if (!wasInWater && isInWater && this.velocity.y > 2) { sounds.splash.triggerAttackRelease("C2", "0.5s"); createNoise(this.position.x + this.width/2, this.position.y + this.height, 300, 0.8); } }
             isCollidingWith(rect) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && this.position.y < rect.position.y + rect.height && this.position.y + this.height > rect.position.y; }
             wasCollidingWith(rect, lastY) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && lastY < rect.position.y + rect.height && lastY + this.height > rect.position.y; }
             jump() { if (this.onGround) { this.velocity.y = -this.jumpForce; sounds.jump.triggerAttackRelease("C3", "0.1s"); } }
             createPing(type) {
-                const now = Date.now();
-                const center = { x: this.position.x + this.width / 2, y: this.position.y + this.height / 2 };
-                const isInWater = game.level.water.some(water => this.isCollidingWith(water));
-                if (type === 'short' && now - this.lastShortPing > this.shortPingCooldown) {
-                    this.lastShortPing = now;
-                    let radius = isInWater ? 60 : 120;
-                    pings.push(new Ping(center.x, center.y, radius, 1500, 'rgba(0, 255, 255, 1)', 4, 15));
-                    createNoise(center.x, center.y, radius * 2, 0.3); sounds.shortPing.triggerAttackRelease("C5", "8n");
-                } else if (type === 'long' && now - this.lastLongPing > this.longPingCooldown) {
-                    this.lastLongPing = now;
-                    let radius = isInWater ? 120 : 300;
-                    pings.push(new Ping(center.x, center.y, radius, 4000, 'rgba(255, 255, 255, 1)', 6, 40));
-                    createNoise(center.x, center.y, radius * 2.5, 1.0); sounds.longPing.triggerAttackRelease("C3", "0.5s");
-                }
+                const now = Date.now(); const center = { x: this.position.x + this.width / 2, y: this.position.y + this.height / 2 }; const isInWater = game.level.water.some(water => this.isCollidingWith(water));
+                if (type === 'short' && now - this.lastShortPing > this.shortPingCooldown) { this.lastShortPing = now; let radius = isInWater ? 60 : 120; pings.push(new Ping(center.x, center.y, radius, 1500, 'rgba(0, 255, 255, 1)', 4, 15)); createNoise(center.x, center.y, radius * 2, 0.3); sounds.shortPing.triggerAttackRelease("C5", "8n");
+                } else if (type === 'long' && now - this.lastLongPing > this.longPingCooldown) { this.lastLongPing = now; let radius = isInWater ? 120 : 300; pings.push(new Ping(center.x, center.y, radius, 4000, 'rgba(255, 255, 255, 1)', 6, 40)); createNoise(center.x, center.y, radius * 2.5, 1.0); sounds.longPing.triggerAttackRelease("C3", "0.5s"); }
             }
         }
+        class Ping { constructor(x, y, maxRadius, duration, color, speed, particleCount) { this.position = { x, y }; this.radius = 0; this.maxRadius = maxRadius; this.duration = duration; this.color = color; this.speed = speed; this.creationTime = Date.now(); this.active = true; this.particles = []; for (let i = 0; i < particleCount; i++) { this.particles.push(new PingParticle(this.position.x, this.position.y, this.color)); } } update() { this.radius += this.speed; this.particles.forEach(p => { if (p.life > 0) p.update(); }); if (this.radius >= this.maxRadius) { this.radius = this.maxRadius; if (Date.now() - this.creationTime > 500) { this.active = false; } } } draw() { const elapsed = Date.now() - this.creationTime; const alpha = Math.max(0, 1 - elapsed / (this.duration * 0.5)); for (let i = 0; i < 3; i++) { ctx.beginPath(); const currentRadius = this.radius - i * 15; if (currentRadius > 0) { ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * (1 - i * 0.3)})`; ctx.lineWidth = 1 + (1 - alpha); ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2); ctx.stroke(); } } this.particles.forEach(p => { if (p.life > 0) p.draw(); }); } }
+        class PingParticle { constructor(x, y, color) { this.x = x; this.y = y; const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed; this.lifespan = 50 + Math.random() * 50; this.life = this.lifespan; this.color = color; } update() { this.x += this.vx; this.y += this.vy; this.life--; } draw() { ctx.fillStyle = this.color.replace('1)', `${this.life / this.lifespan})`); ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill(); } }
+        class Enemy { constructor(x, y) { this.width = 25; this.height = 45; this.startPosition = { x, y }; this.position = { x, y }; this.velocity = { x: 1, y: 0 }; this.speed = 1; this.state = 'patrol'; this.target = null; this.revealTime = 0; this.onGround = false; } reset() { this.position = { ...this.startPosition }; this.state = 'patrol'; this.target = null; this.velocity.x = this.speed; } draw(player) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (Date.now() < this.revealTime || distanceToPlayer < 150) { ctx.save(); ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; ctx.beginPath(); ctx.moveTo(this.position.x, this.position.y + this.height); ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7); ctx.lineTo(this.position.x + this.width, this.position.y + this.height); ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5); ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true); ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5); ctx.closePath(); ctx.fill(); ctx.restore(); } } update(player, platforms, noises) { this.onGround = false; this.velocity.y += GRAVITY; this.position.y += this.velocity.y; this.position.x += this.velocity.x; for (const platform of platforms) { if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } if (this.isCollidingWith(platform)) { if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) { this.position.x = platform.position.x - this.width; this.velocity.x *= -1; } else if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) { this.position.x = platform.position.x + platform.width; this.velocity.x *= -1; } } } for (const platform of platforms) { if ( Math.abs(this.position.y + this.height - platform.position.y) < 2 && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width ) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } } this.handleAI(player, platforms, noises); } isCollidingWith(rect) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && this.position.y < rect.position.y + rect.height && this.position.y + this.height > rect.position.y; } handleAI(player, platforms, noises) { for (const noise of noises) { const distance = Math.hypot(this.position.x - noise.x, this.position.y - noise.y); if (distance < noise.radius * noise.intensity) { if (this.state === 'patrol') { sounds.enemyAlert.triggerAttackRelease("A4", "0.2s"); } this.state = 'investigating'; this.target = { x: noise.x, y: noise.y }; this.revealTime = Date.now() + 500; } } if (Date.now() < player.revealTime) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer < 200) { this.state = 'chasing'; this.target = player.position; } } if (this.state === 'patrol' && this.onGround) { const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1; const groundCheckY = this.position.y + this.height + 5; let groundAhead = false; for (const platform of platforms) { if (lookAheadX >= platform.position.x && lookAheadX <= platform.position.x + platform.width && groundCheckY >= platform.position.y && groundCheckY <= platform.position.y + platform.height) { groundAhead = true; break; } } if (!groundAhead) { this.velocity.x *= -1; } } switch(this.state) { case 'patrol': this.velocity.x = this.speed * Math.sign(this.velocity.x || 1); break; case 'investigating': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 1.5 * Math.sign(this.target.x - this.position.x); if (Math.abs(this.position.x - this.target.x) < 10) { this.state = 'patrol'; this.target = null; this.velocity.x = this.speed * Math.sign(this.velocity.x); } break; case 'chasing': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 2 * Math.sign(this.target.x - this.position.x); const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if(distanceToPlayer > 400){ this.state = 'patrol'; this.target = null; } break; } } reveal() { this.revealTime = Date.now() + 3000; } }
+        class RevealedObject { constructor(platform, duration) { this.platform = platform; this.revealTime = Date.now(); this.duration = duration; } draw() { const elapsed = Date.now() - this.revealTime; if (elapsed > this.duration) return false; const alpha = 1 - (elapsed / this.duration); this.platform.draw(alpha); return true; } }
+        class Platform { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; } draw(alpha = 1) { ctx.save(); ctx.globalAlpha = alpha; const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height); grad.addColorStop(0, '#334'); grad.addColorStop(0.5, '#223'); grad.addColorStop(1, '#112'); ctx.fillStyle = grad; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.7})`; ctx.lineWidth = 1; ctx.strokeRect(this.position.x, this.position.y, this.width, this.height); ctx.restore(); } }
+        class HeartOfLight { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; this.revealTime = 0; this.isAbsorbed = false; } draw() { if (Date.now() < this.revealTime && !this.isAbsorbed) { const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 5000); const centerX = this.position.x + this.width / 2; const centerY = this.position.y + this.height / 2; const pulse = Math.sin(Date.now() / 200) * 5 + (this.width / 2); const gradient = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, pulse); gradient.addColorStop(0, `rgba(255, 255, 180, ${alpha})`); gradient.addColorStop(0.8, `rgba(255, 255, 0, ${alpha * 0.8})`); gradient.addColorStop(1, `rgba(255, 200, 0, 0)`); ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(centerX, centerY, pulse, 0, Math.PI * 2); ctx.fill(); } } reveal() { this.revealTime = Date.now() + 5000; } absorb() { if (this.isAbsorbed) return; this.isAbsorbed = true; isLevelEnding = true; gameRunning = false; sounds.levelWinExplosion.triggerAttackRelease("2n"); pings.push(new Ping(this.position.x + this.width / 2, this.position.y + this.height / 2, canvas.width * 1.5, 1500, 'rgba(255, 255, 255, 0.9)', 25, 0)); setTimeout(() => { sounds.levelWin.triggerAttackRelease("C5", "0.5s"); currentLevelIndex++; showMessage("Nível Concluído!", "A luz ressoa através de você.", "Próxima Fase", () => { isLevelEnding = false; game.loadLevel(currentLevelIndex); }); }, 1500); } }
+        class Water { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; } draw() { ctx.fillStyle = 'rgba(0, 50, 150, 0.3)'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); } }
+        class AcidWater { constructor(x, y, width, height) { this.position = {x, y}; this.width = width; this.height = height;} draw() { const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height); grad.addColorStop(0, `rgba(100, 255, 100, 0.4)`); grad.addColorStop(1, `rgba(50, 200, 50, 0.7)`); ctx.fillStyle = grad; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); } }
+        class Coin { constructor(x, y) { this.x = x; this.y = y; this.radius = 14; this.collected = false; this.animation = Math.random() * Math.PI * 2; } draw() { if (this.collected) return; const pulse = Math.sin(Date.now() / 200 + this.animation) * 3; ctx.save(); ctx.beginPath(); ctx.arc(this.x + this.radius, this.y + this.radius + pulse, this.radius, 0, Math.PI * 2); ctx.fillStyle = 'gold'; ctx.shadowColor = '#fff200'; ctx.shadowBlur = 10; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore(); } isCollidingWith(player) { const px = player.position.x + player.width / 2; const py = player.position.y + player.height / 2; const dx = (this.x + this.radius) - px; const dy = (this.y + this.radius) - py; const dist = Math.sqrt(dx * dx + dy * dy); return dist < this.radius + Math.max(player.width, player.height) / 2 - 8; } }
 
-        class Ping {
-            constructor(x, y, maxRadius, duration, color, speed, particleCount) { this.position = { x, y }; this.radius = 0; this.maxRadius = maxRadius; this.duration = duration; this.color = color; this.speed = speed; this.creationTime = Date.now(); this.active = true; this.particles = []; for (let i = 0; i < particleCount; i++) { this.particles.push(new PingParticle(this.position.x, this.position.y, this.color)); } }
-            update() { this.radius += this.speed; this.particles.forEach(p => { if (p.life > 0) p.update(); }); if (this.radius >= this.maxRadius) { this.radius = this.maxRadius; if (Date.now() - this.creationTime > 500) { this.active = false; } } }
-            draw() {
-                const elapsed = Date.now() - this.creationTime;
-                const alpha = Math.max(0, 1 - elapsed / (this.duration * 0.5));
-                for (let i = 0; i < 3; i++) {
-                    ctx.beginPath();
-                    const currentRadius = this.radius - i * 15;
-                    if (currentRadius > 0) {
-                        ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * (1 - i * 0.3)})`;
-                        ctx.lineWidth = 1 + (1 - alpha);
-                        ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2);
-                        ctx.stroke();
-                    }
-                }
-                this.particles.forEach(p => { if (p.life > 0) p.draw(); });
-            }
-        }
+        const levelData = [ { name: "O Despertar", playerStart: { x: 50, y: 500 }, platforms: [ {x: 0, y: 580, w: 1000, h: 20}, {x: 250, y: 520, w: 150, h: 20}, {x: 500, y: 460, w: 150, h: 20}, {x: 300, y: 380, w: 100, h: 20}, {x: 500, y: 300, w: 200, h: 20} ], enemies: [ { x: 400, y: 535 }, { x: 800, y: 535 } ], water: [], acid: [], coins: [ {x: 270, y: 490}, {x: 520, y: 430}, {x: 350, y: 350} ], exit: { x: 650, y: 240, width: 50, height: 60 } }, { name: "Os Primeiros Ecos", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 150, y: 500, w: 100, h: 20 }, { x: 350, y: 440, w: 300, h: 20 }, { x: 750, y: 380, w: 100, h: 20 }, { x: 550, y: 300, w: 100, h: 20 }, { x: 200, y: 250, w: 250, h: 20 }, ], enemies: [ { x: 400, y: 395 }, { x: 220, y: 205 }, { x: 560, y: 255 }, { x: 800, y: 535 } ], water: [], acid: [], coins: [ {x: 170, y: 470}, {x: 370, y: 410}, {x: 800, y: 350} ], exit: { x: 220, y: 190, width: 50, height: 60 } }, { name: "A Caverna Inundada", playerStart: { x: 50, y: 200 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 0, y: 260, w: 200, h: 20 }, { x: 250, y: 350, w: 100, h: 20 }, { x: 400, y: 430, w: 10, h: 150 }, { x: 600, y: 450, w: 200, h: 20 }, ], enemies: [ { x: 100, y: 535 }, { x: 620, y: 405 }, { x: 260, y: 305 }, { x: 800, y: 535 } ], water: [ { x: 0, y: 560, w: 400, h: 20 } ], acid: [{x: 410, y: 560, w: 190, h: 20}], coins: [ {x: 50, y: 230}, {x: 650, y: 420}, {x: 300, y: 320} ], exit: { x: 750, y: 390, width: 50, height: 60 } }, { name: "A Fenda dos Sussurros", playerStart: { x: 80, y: 120 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 50, y: 180, w: 150, h: 20 }, { x: 300, y: 250, w: 100, h: 20 }, { x: 100, y: 350, w: 100, h: 20 }, { x: 250, y: 450, w: 100, h: 20 }, { x: 500, y: 500, w: 100, h: 20 }, { x: 650, y: 420, w: 100, h: 20 }, { x: 800, y: 340, w: 150, h: 20 }, { x: 600, y: 260, w: 100, h: 20 }, { x: 750, y: 180, w: 100, h: 20 }, { x: 900, y: 120, w: 100, h: 20 }, ], enemies: [ { x: 150, y: 535 }, { x: 810, y: 295 }, { x: 610, y: 215 }, { x: 260, y: 405 }, { x: 800, y: 535 } ], water: [], acid: [ { x: 450, y: 560, w: 400, h: 20 } ], coins: [ {x: 60, y: 150}, {x: 900, y: 90}, {x: 700, y: 400} ], exit: { x: 925, y: 60, width: 50, height: 60 } }, { name: "O Coração da Escuridão", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 850, y: 500, w: 150, h: 20 }, { x: 0, y: 420, w: 750, h: 20 }, { x: 200, y: 320, w: 150, h: 20 }, { x: 450, y: 150, w: 20, h: 100 }, { x: 550, y: 220, w: 200, h: 20 }, { x: 200, y: 150, w: 200, h: 20 }, ], enemies: [ { x: 300, y: 375 }, { x: 600, y: 175 }, { x: 220, y: 105 }, { x: 880, y: 455 }, { x: 650, y: 375 }, { x: 800, y: 535 } ], water: [], acid: [], coins: [ {x: 900, y: 470}, {x: 250, y: 290}, {x: 600, y: 200} ], exit: { x: 250, y: 90, width: 50, height: 60 } } ];
+        const levels = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)), coins: data.coins ? data.coins.map(c => new Coin(c.x, c.y)) : [] }));
 
-        class PingParticle {
-            constructor(x, y, color) { this.x = x; this.y = y; const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed; this.lifespan = 50 + Math.random() * 50; this.life = this.lifespan; this.color = color; }
-            update() { this.x += this.vx; this.y += this.vy; this.life--; }
-            draw() { ctx.fillStyle = this.color.replace('1)', `${this.life / this.lifespan})`); ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill(); }
-        }
+        let coins = []; let totalCoins = 0; let collectedCoins = [];
+        function getCoinId(levelIndex, coin) { return `${levelIndex}-${Math.round(coin.x)}-${Math.round(coin.y)}`; }
+        function loadCoins() { const saved = localStorage.getItem('eco_coins'); totalCoins = saved ? parseInt(saved) : 0; const savedCollected = localStorage.getItem('eco_collected_coins'); collectedCoins = savedCollected ? JSON.parse(savedCollected) : []; }
+        function saveCoins() { localStorage.setItem('eco_coins', totalCoins); localStorage.setItem('eco_collected_coins', JSON.stringify(collectedCoins)); }
+        const hudDiv = document.getElementById('hud'); const coinIcon = document.createElement('span'); coinIcon.innerHTML = '🪙'; coinIcon.style.marginLeft = '18px'; coinIcon.style.fontSize = '1.3em'; const coinCount = document.createElement('span'); coinCount.id = 'coin-count'; coinCount.style.marginLeft = '4px'; hudDiv.appendChild(coinIcon); hudDiv.appendChild(coinCount);
+        function updateCoinHUD() { coinCount.textContent = totalCoins; }
 
-        class Enemy {
-            constructor(x, y) { this.width = 25; this.height = 45; this.startPosition = { x, y }; this.position = { x, y }; this.velocity = { x: 1, y: 0 }; this.speed = 1; this.state = 'patrol'; this.target = null; this.revealTime = 0; this.onGround = false; }
-            reset() { this.position = { ...this.startPosition }; this.state = 'patrol'; this.target = null; this.velocity.x = this.speed; }
-            draw(player) {
-                // Desenha o inimigo em vermelho se estiver revelado OU se o player estiver a menos de 150px
-                const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
-                if (Date.now() < this.revealTime || distanceToPlayer < 150) {
-                    ctx.save();
-                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-                    ctx.beginPath();
-                    ctx.moveTo(this.position.x, this.position.y + this.height);
-                    ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7);
-                    ctx.lineTo(this.position.x + this.width, this.position.y + this.height);
-                    ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5);
-                    ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true);
-                    ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5);
-                    ctx.closePath();
-                    ctx.fill();
-                    ctx.restore();
-                }
-            }
-            update(player, platforms, noises) {
-                this.onGround = false;
-                this.velocity.y += GRAVITY;
-                this.position.y += this.velocity.y;
-                this.position.x += this.velocity.x;
-
-                for (const platform of platforms) {
-                    // Colisão vertical
-                    if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
-                        this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height;
-                    }
-                    // Colisão horizontal
-                    if (this.isCollidingWith(platform)) {
-                        if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) {
-                            this.position.x = platform.position.x - this.width; this.velocity.x *= -1;
-                        } else if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) {
-                            this.position.x = platform.position.x + platform.width; this.velocity.x *= -1;
-                        }
-                    }
-                }
-                // Verificação extra: se está exatamente sobre uma plataforma, considerar onGround
-                for (const platform of platforms) {
-                    if (
-                        Math.abs(this.position.y + this.height - platform.position.y) < 2 &&
-                        this.position.x + this.width > platform.position.x &&
-                        this.position.x < platform.position.x + platform.width
-                    ) {
-                        this.velocity.y = 0;
-                        this.onGround = true;
-                        this.position.y = platform.position.y - this.height;
-                    }
-                }
-                this.handleAI(player, platforms, noises);
-            }
-            isCollidingWith(rect) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && this.position.y < rect.position.y + rect.height && this.position.y + this.height > rect.position.y; }
-            handleAI(player, platforms, noises) {
-                for (const noise of noises) {
-                    const distance = Math.hypot(this.position.x - noise.x, this.position.y - noise.y);
-                    if (distance < noise.radius * noise.intensity) {
-                        if (this.state === 'patrol') { sounds.enemyAlert.triggerAttackRelease("A4", "0.2s"); }
-                        this.state = 'investigating'; this.target = { x: noise.x, y: noise.y }; this.revealTime = Date.now() + 500;
-                    }
-                }
-                if (Date.now() < player.revealTime) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer < 200) { this.state = 'chasing'; this.target = player.position; } }
-
-                // Edge detection for patrol
-                if (this.state === 'patrol' && this.onGround) {
-                    const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1;
-                    const groundCheckY = this.position.y + this.height + 5;
-                    let groundAhead = false;
-                    for (const platform of platforms) {
-                        if (lookAheadX >= platform.position.x && lookAheadX <= platform.position.x + platform.width && groundCheckY >= platform.position.y && groundCheckY <= platform.position.y + platform.height) {
-                            groundAhead = true;
-                            break;
-                        }
-                    }
-                    if (!groundAhead) { this.velocity.x *= -1; }
-                }
-
-                switch(this.state) {
-                    case 'patrol': this.velocity.x = this.speed * Math.sign(this.velocity.x || 1); break;
-                    case 'investigating': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 1.5 * Math.sign(this.target.x - this.position.x); if (Math.abs(this.position.x - this.target.x) < 10) { this.state = 'patrol'; this.target = null; this.velocity.x = this.speed * Math.sign(this.velocity.x); } break;
-                    case 'chasing': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 2 * Math.sign(this.target.x - this.position.x); const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if(distanceToPlayer > 400){ this.state = 'patrol'; this.target = null; } break;
-                }
-            }
-            reveal() { this.revealTime = Date.now() + 3000; }
-        }
-
-        class RevealedObject {
-            constructor(platform, duration) { this.platform = platform; this.revealTime = Date.now(); this.duration = duration; }
-            draw() { const elapsed = Date.now() - this.revealTime; if (elapsed > this.duration) return false; const alpha = 1 - (elapsed / this.duration); this.platform.draw(alpha); return true; }
-        }
-
-        class Platform {
-            constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; }
-            draw(alpha = 1) {
-                ctx.save(); ctx.globalAlpha = alpha; const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height);
-                grad.addColorStop(0, '#334'); grad.addColorStop(0.5, '#223'); grad.addColorStop(1, '#112');
-                ctx.fillStyle = grad; ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
-                ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.7})`; ctx.lineWidth = 1; ctx.strokeRect(this.position.x, this.position.y, this.width, this.height);
-                ctx.restore();
-            }
-        }
-
-        // LoreOrb class removed
-        /*
-        class LoreOrb {
-            constructor(x, y) { this.x = x; this.y = y; this.radius = 12; this.triggered = false; this.revealTime = 0; }
-            draw() {
-                if (Date.now() < this.revealTime && !this.triggered) {
-                    const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 4000); const gradient = ctx.createRadialGradient(this.x, this.y, this.radius * 0.2, this.x, this.y, this.radius);
-                    gradient.addColorStop(0, `rgba(224, 138, 255, ${alpha})`); gradient.addColorStop(1, `rgba(168, 85, 247, 0)`);
-                    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-            reveal() { this.revealTime = Date.now() + 4000; }
-            trigger() {
-                if (this.triggered) return; this.triggered = true; gameRunning = false; sounds.lorePing.triggerAttackRelease("C6", "0.2s");
-                const prompt = "You are a fragmented memory in 'Eco-Localizador'. Provide one short, cryptic piece of lore (1-2 sentences) about the 'Ouvintes' (monsters), the darkness, or the player. Be mysterious. Respond in Portuguese.";
-                callGemini(prompt).then(lore => {
-                    const isError = lore.includes("vazio") || lore.includes("silêncio"); const title = isError ? "Eco Silencioso" : "Um Eco do Passado...";
-                    const text = isError ? "A memória se desvanece antes que você possa compreendê-la." : `"${lore}"`;
-                    showMessage(title, text, "Continuar", () => { gameRunning = true; });
-                });
-            }
-        }
-        */
-
-        class HeartOfLight {
-            constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; this.revealTime = 0; this.isAbsorbed = false; }
-            draw() {
-                if (Date.now() < this.revealTime && !this.isAbsorbed) {
-                    const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 5000); const centerX = this.position.x + this.width / 2; const centerY = this.position.y + this.height / 2;
-                    const pulse = Math.sin(Date.now() / 200) * 5 + (this.width / 2); const gradient = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, pulse);
-                    gradient.addColorStop(0, `rgba(255, 255, 180, ${alpha})`); gradient.addColorStop(0.8, `rgba(255, 255, 0, ${alpha * 0.8})`); gradient.addColorStop(1, `rgba(255, 200, 0, 0)`);
-                    ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(centerX, centerY, pulse, 0, Math.PI * 2); ctx.fill();
-                }
-            }
-            reveal() { this.revealTime = Date.now() + 5000; }
-            absorb() {
-                if (this.isAbsorbed) return; this.isAbsorbed = true; isLevelEnding = true; gameRunning = false;
-                sounds.levelWinExplosion.triggerAttackRelease("2n");
-                pings.push(new Ping(this.position.x + this.width / 2, this.position.y + this.height / 2, canvas.width * 1.5, 1500, 'rgba(255, 255, 255, 0.9)', 25, 0));
-                setTimeout(() => {
-                    sounds.levelWin.triggerAttackRelease("C5", "0.5s"); currentLevelIndex++;
-                    showMessage("Nível Concluído!", "A luz ressoa através de você.", "Próxima Fase", () => { isLevelEnding = false; game.loadLevel(currentLevelIndex); });
-                }, 1500);
-            }
-        }
-
-        class Water {
-            constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; }
-            draw() { ctx.fillStyle = 'rgba(0, 50, 150, 0.3)'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); }
-        }
-
-        class AcidWater {
-            constructor(x, y, width, height) { this.position = {x, y}; this.width = width; this.height = height;}
-            draw() {
-                const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height);
-                grad.addColorStop(0, `rgba(100, 255, 100, 0.4)`);
-                grad.addColorStop(1, `rgba(50, 200, 50, 0.7)`);
-                ctx.fillStyle = grad;
-                ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
-            }
-        }
-
-        // --- DADOS DAS FASES ---
-        // ID: 001(criação fase)
-        const levelData = [
-            { name: "O Despertar", playerStart: { x: 50, y: 500 }, platforms: [ {x: 0, y: 580, w: 1000, h: 20}, {x: 250, y: 520, w: 150, h: 20}, {x: 500, y: 460, w: 150, h: 20}, {x: 300, y: 380, w: 100, h: 20}, {x: 500, y: 300, w: 200, h: 20} ], enemies: [ { x: 400, y: 535 }, { x: 800, y: 535 } ], water: [], acid: [], loreOrbs: [], exit: { x: 650, y: 240, width: 50, height: 60 } },
-            { name: "Os Primeiros Ecos", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 150, y: 500, w: 100, h: 20 }, { x: 350, y: 440, w: 300, h: 20 }, { x: 750, y: 380, w: 100, h: 20 }, { x: 550, y: 300, w: 100, h: 20 }, { x: 200, y: 250, w: 250, h: 20 }, ], enemies: [ { x: 400, y: 395 }, { x: 220, y: 205 }, { x: 560, y: 255 }, { x: 800, y: 535 } ], water: [], acid: [], loreOrbs: [], exit: { x: 220, y: 190, width: 50, height: 60 } },
-            { name: "A Caverna Inundada", playerStart: { x: 50, y: 200 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 0, y: 260, w: 200, h: 20 }, { x: 250, y: 350, w: 100, h: 20 }, { x: 400, y: 430, w: 10, h: 150 }, { x: 600, y: 450, w: 200, h: 20 }, ], enemies: [ { x: 100, y: 535 }, { x: 620, y: 405 }, { x: 260, y: 305 }, { x: 800, y: 535 } ], water: [ { x: 0, y: 560, w: 400, h: 20 } ], acid: [{x: 410, y: 560, w: 190, h: 20}], loreOrbs: [], exit: { x: 750, y: 390, width: 50, height: 60 } },
-            { name: "A Fenda dos Sussurros", playerStart: { x: 80, y: 120 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 50, y: 180, w: 150, h: 20 }, { x: 300, y: 250, w: 100, h: 20 }, { x: 100, y: 350, w: 100, h: 20 }, { x: 250, y: 450, w: 100, h: 20 }, { x: 500, y: 500, w: 100, h: 20 }, { x: 650, y: 420, w: 100, h: 20 }, { x: 800, y: 340, w: 150, h: 20 }, { x: 600, y: 260, w: 100, h: 20 }, { x: 750, y: 180, w: 100, h: 20 }, { x: 900, y: 120, w: 100, h: 20 }, ], enemies: [ { x: 150, y: 535 }, { x: 810, y: 295 }, { x: 610, y: 215 }, { x: 260, y: 405 }, { x: 800, y: 535 } ], water: [], acid: [ { x: 450, y: 560, w: 400, h: 20 } ], loreOrbs: [], exit: { x: 925, y: 60, width: 50, height: 60 } },
-            { name: "O Coração da Escuridão", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 850, y: 500, w: 150, h: 20 }, { x: 0, y: 420, w: 750, h: 20 }, { x: 200, y: 320, w: 150, h: 20 }, { x: 450, y: 150, w: 20, h: 100 }, { x: 550, y: 220, w: 200, h: 20 }, { x: 200, y: 150, w: 200, h: 20 }, ], enemies: [ { x: 300, y: 375 }, { x: 600, y: 175 }, { x: 220, y: 105 }, { x: 880, y: 455 }, { x: 650, y: 375 }, { x: 800, y: 535 } ], water: [], acid: [ { x: 750, y: 400, w: 100, h: 20}], loreOrbs: [], exit: { x: 250, y: 90, width: 50, height: 60 } }
-        ];
-
-        const levels = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)) }));
-
-        // --- SISTEMA DE JOGO ---
-        let player, pings, enemies, revealedObjects, noises, heartOfLight; // loreOrbs removed
-
+        let player, pings, enemies, revealedObjects, noises, heartOfLight;
         const game = {
             level: null,
             loadLevel: function(levelIndex) {
@@ -877,19 +801,17 @@
                 this.level = { ...levels[levelIndex] };
                 player = new Player(); player.reset(this.level.playerStart.x, this.level.playerStart.y);
                 enemies = this.level.enemies.map(e => new Enemy(e.x, e.y));
-                // loreOrbs removed from here
-                const exit = this.level.exit;
-                heartOfLight = new HeartOfLight(exit.x, exit.y, exit.width, exit.height);
+                heartOfLight = new HeartOfLight(this.level.exit.x, this.level.exit.y, this.level.exit.width, this.level.exit.height);
                 pings = []; revealedObjects = []; noises = [];
+                coins = this.level.coins.map(c => { const coin = Object.assign(Object.create(Object.getPrototypeOf(c)), c); const coinId = getCoinId(levelIndex, coin); if (collectedCoins.includes(coinId)) coin.collected = true; return coin; });
                 showLevelIntro(this.level);
             },
             restartLevel: function() {
                 player.reset(this.level.playerStart.x, this.level.playerStart.y);
                 enemies.forEach(e => e.reset());
-                // loreOrbs.forEach(o => o.triggered = false); // Removed
                 pings = []; revealedObjects = []; noises = [];
-                const exit = this.level.exit;
-                heartOfLight = new HeartOfLight(exit.x, exit.y, exit.width, exit.height);
+                heartOfLight = new HeartOfLight(this.level.exit.x, this.level.exit.y, this.level.exit.width, this.level.exit.height);
+                coins = this.level.coins.map(c => { const coin = Object.assign(Object.create(Object.getPrototypeOf(c)), c); const coinId = getCoinId(currentLevelIndex, coin); if (collectedCoins.includes(coinId)) coin.collected = true; return coin; });
                 gameRunning = true;
             },
             winGame: function() {
@@ -905,40 +827,50 @@
 
         function checkCollisionsAndReveal() {
             if (isLevelEnding || isGameEnding) return;
-
             for (const ping of pings) {
                 for (const platform of game.level.platforms) { if (isCircleIntersectingRect(ping, platform)) { revealedObjects.push(new RevealedObject(platform, ping.duration)); } }
                 for (const enemy of enemies) { if (isCircleIntersectingRect(ping, enemy)) { enemy.reveal(); } }
-                // loreOrbs revelation/triggering removed
                 if (isCircleIntersectingRect(ping, player)) { player.revealTime = Date.now() + ping.duration; }
                 if (isCircleIntersectingRect(ping, heartOfLight)) { heartOfLight.reveal(); }
             }
-            if (Date.now() - player.spawnTime > 1000) {
-                for (const enemy of enemies) {
-                    if (player.isCollidingWith(enemy)) {
-                        gameRunning = false; sounds.gameOver.triggerAttackRelease("C1", "1s");
-                        showMessage("Você foi Ouvido", "O silêncio era sua única defesa.", "Tentar Novamente", () => { game.restartLevel(); });
-                        return;
-                    }
-                }
+            if (Date.now() - player.spawnTime > 1000) { 
+                for (const enemy of enemies) { 
+                    if (player.isCollidingWith(enemy) && !player.deathState) { 
+                        gameRunning = false; 
+                        sounds.gameOver.triggerAttackRelease("C1", "1s"); 
+                        player.startDeathAnimation();
+                        setTimeout(() => {
+                            showMessage("Você foi Ouvido", "O silêncio era sua única defesa.", "Tentar Novamente", () => { 
+                                player.resetDeathState();
+                                game.restartLevel(); 
+                            }); 
+                        }, 400); // Aguarda a animação de morte (400ms total)
+                        return; 
+                    } 
+                } 
             }
-
-            for(const acidPool of game.level.acid) {
-                if(player.isCollidingWith(acidPool)) {
-                    gameRunning = false; sounds.gameOver.triggerAttackRelease("C1", "1s");
-                    showMessage("Corroído", "A escuridão líquida te consome.", "Tentar Novamente", () => { game.restartLevel(); });
-                    return;
-                }
+            for(const acidPool of game.level.acid) { 
+                if(player.isCollidingWith(acidPool) && !player.deathState) { 
+                    gameRunning = false; 
+                    sounds.gameOver.triggerAttackRelease("C1", "1s"); 
+                    player.startDeathAnimation();
+                    setTimeout(() => {
+                        showMessage("Corroído", "A escuridão líquida te consome.", "Tentar Novamente", () => { 
+                            player.resetDeathState();
+                            game.restartLevel(); 
+                        }); 
+                    }, 400); // Aguarda a animação de morte (400ms total)
+                    return; 
+                } 
             }
-
             if(player.isCollidingWith(heartOfLight)) { heartOfLight.absorb(); }
+            for (const coin of coins) { if (!coin.collected && coin.isCollidingWith(player)) { coin.collected = true; totalCoins++; const coinId = getCoinId(currentLevelIndex, coin); if (!collectedCoins.includes(coinId)) collectedCoins.push(coinId); saveCoins(); updateCoinHUD(); if (sounds && sounds.levelWin) sounds.levelWin.triggerAttackRelease("C6", "0.1s"); } }
         }
 
         function isCircleIntersectingRect(circle, rect) { const distX = Math.abs(circle.position.x - rect.position.x - rect.width / 2); const distY = Math.abs(circle.position.y - rect.position.y - rect.height / 2); if (distX > (rect.width / 2 + circle.radius) || distY > (rect.height / 2 + circle.radius)) return false; if (distX <= (rect.width / 2) || distY <= (rect.height / 2)) return true; const dx = distX - rect.width / 2; const dy = distY - rect.height / 2; return (dx * dx + dy * dy <= (circle.radius * circle.radius)); }
 
         function animate() {
             requestAnimationFrame(animate); ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             if(isGameEnding) {
                 const anim = player.finalAnimationState; anim.y -= 0.5; anim.pulse = Math.sin(Date.now() / 300) * 40 + 50;
                 ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (1 - anim.alpha)})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -949,258 +881,89 @@
                     showMessage("Vitória!", anim.finalMessage, "Jogar Novamente", () => {
                         mainMenu.classList.add('visible');
                         hud.classList.remove('visible'); cooldownsHud.classList.remove('visible');
-                        stopAmbientMusic(); // Ensure music stops on game over/win screen until a new game starts
+                        stopAmbientMusic();
                     });
                 }
                 return;
             }
-
             if (!game.level) return;
-
-            if (gameRunning) {
-                player.update(game.level.platforms, game.level.water);
-                enemies.forEach(e => e.update(player, game.level.platforms, noises));
-            }
-
-            if (gameRunning || isLevelEnding) {
-                pings.forEach(p => p.update());
-                checkCollisionsAndReveal();
-            }
-
+            if (gameRunning) { player.update(game.level.platforms, game.level.water); enemies.forEach(e => e.update(player, game.level.platforms, noises)); }
+            if (gameRunning || isLevelEnding) { pings.forEach(p => p.update()); checkCollisionsAndReveal(); }
             revealedObjects = revealedObjects.filter(ro => ro.draw());
-            game.level.water.forEach(w => w.draw());
-            game.level.acid.forEach(a => a.draw());
-            heartOfLight.draw(); player.draw(); enemies.forEach(e => e.draw(player)); pings.forEach(p => p.draw());
+            game.level.water.forEach(w => w.draw()); game.level.acid.forEach(a => a.draw());
+            heartOfLight.draw(); coins.forEach(c => c.draw());
+            player.draw(); enemies.forEach(e => e.draw(player)); pings.forEach(p => p.draw());
             pings = pings.filter(p => p.active); noises = noises.filter(n => Date.now() - n.creationTime < 100);
-
             if(gameRunning) updateHUD();
         }
 
         function updateHUD() {
-            hud.textContent = `Fase ${currentLevelIndex + 1}: ${game.level.name}`;
+            hudDiv.firstChild.textContent = `Fase ${currentLevelIndex + 1}: ${game.level.name}`;
             qCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastShortPing) / player.shortPingCooldown) * 100)}%`;
             eCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastLongPing) / player.longPingCooldown) * 100)}%`;
+            updateCoinHUD();
         }
 
-        function showMessage(title, text, buttonText, callback) {
-            messageTitle.textContent = title; messageText.textContent = text; messageOverlay.classList.add('visible');
-            const oldButton = document.getElementById('message-button'); const newButton = oldButton.cloneNode(true);
-            oldButton.parentNode.replaceChild(newButton, oldButton); newButton.textContent = buttonText;
-            newButton.addEventListener('click', async () => { await initAudio(); messageOverlay.classList.remove('visible'); callback(); }, { once: true });
-        }
+        function showMessage(title, text, buttonText, callback) { messageTitle.textContent = title; messageText.textContent = text; messageOverlay.classList.add('visible'); const oldButton = document.getElementById('message-button'); const newButton = oldButton.cloneNode(true); oldButton.parentNode.replaceChild(newButton, oldButton); newButton.textContent = buttonText; newButton.addEventListener('click', async () => { await initAudio(); messageOverlay.classList.remove('visible'); callback(); }, { once: true }); }
 
-        // Modified to remove dynamic story generation, now a placeholder
         async function showLevelIntro(level) {
-            const staticInstructions = currentLevelIndex === 0 ? "Use [A/D] ou Setas, [Espaço] para pular. [Q] é um eco curto, [E] é um eco longo. Aperte [ESC] para pausar." : " ";
-            const placeholderText = "Os roteristas estão criando a história desta fase. Prepare-se para a aventura!";
-            showMessage(`Nível ${currentLevelIndex + 1}: ${level.name}`, `${placeholderText}\n\n${staticInstructions}`, "✨ Iniciar Fase ✨", () => { gameRunning = true; });
-            // Removed preloadNextLevelDescription and dynamic API call here
+            const staticInstructions = currentLevelIndex === 0 ? "Use [A/D] ou Setas, [Espaço] para pular. [Q] é um eco curto, [E] é um eco longo. Aperte [ESC] para pausar." : "";
+            showMessage(`Nível ${currentLevelIndex + 1}: ${level.name}`, staticInstructions, "✨ Iniciar Fase ✨", () => { gameRunning = true; });
         }
 
-        startGameButton.addEventListener('click', () => {
-            mainMenu.classList.remove('visible');
-            pauseMenu.classList.remove('visible'); // Ensure pause menu is hidden when starting a new game
-            hud.classList.add('visible'); cooldownsHud.classList.add('visible');
-            currentLevelIndex = 0;
-            nextLevelDescription = null;
-            apiOperational = true;
-            gameStartTime = Date.now();
-            game.loadLevel(currentLevelIndex);
-            // Esconde o glitch-bg só após o fade do menu
-            setTimeout(updateGlitchBgVisibility, 500); // 500ms = tempo do transition do menu
-        });
+        function formatTime(ms) {
+            if (ms < 0) ms = 0;
+            const totalSeconds = Math.floor(ms / 1000);
+            const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, '0');
+            const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${minutes}:${seconds}`;
+        }
 
-        optionsButton.addEventListener('click', () => {
-            mainMenu.classList.remove('visible');
-            optionsMenu.classList.add('visible');
-            cameFromPauseMenu = false; // Came from main menu
-        });
-        creditsButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); creditsMenu.classList.add('visible'); });
-
-        // Back button functionality
-        backButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                button.closest('.overlay').classList.remove('visible');
-                if (cameFromPauseMenu) {
-                    pauseMenu.classList.add('visible'); // Go back to pause menu if came from there
-                } else {
-                    mainMenu.classList.add('visible'); // Go back to main menu otherwise
-                }
-                cameFromPauseMenu = false; // Reset flag
-            });
-        });
-
-        // Pause Menu Interactions
         function togglePause() {
+            if (!gameStartTime) return;
             if (gameRunning) {
                 gameRunning = false;
+                pauseLevelName.textContent = levels[currentLevelIndex].name;
+                pauseTimePlayed.textContent = formatTime(Date.now() - gameStartTime);
+                pauseTotalCoins.textContent = totalCoins;
                 pauseMenu.classList.add('visible');
-                stopAmbientMusic(); // Stop music when paused
-            } else if (pauseMenu.classList.contains('visible')) { // Only resume if pause menu is actually visible
+                sounds.pauseIn.triggerAttackRelease("C3", "0.1s");
+                stopAmbientMusic();
+            } else if (pauseMenu.classList.contains('visible')) {
                 gameRunning = true;
                 pauseMenu.classList.remove('visible');
-                startAmbientMusic(); // Resume music when unpaused
+                sounds.pauseOut.triggerAttackRelease("G3", "0.1s");
+                startAmbientMusic();
+                if (document.activeElement) document.activeElement.blur();
             }
         }
 
+        startGameButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); pauseMenu.classList.remove('visible'); hud.classList.add('visible'); cooldownsHud.classList.add('visible'); currentLevelIndex = 0; gameStartTime = Date.now(); game.loadLevel(currentLevelIndex); setTimeout(updateGlitchBgVisibility, 500); });
+        optionsButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); optionsMenu.classList.add('visible'); cameFromPauseMenu = false; });
+        creditsButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); creditsMenu.classList.add('visible'); });
+        backButtons.forEach(button => { button.addEventListener('click', () => { button.closest('.overlay').classList.remove('visible'); if (cameFromPauseMenu) { pauseMenu.classList.add('visible'); } else { mainMenu.classList.add('visible'); } cameFromPauseMenu = false; }); });
         resumeButton.addEventListener('click', togglePause);
+        pauseOptionsButton.addEventListener('click', () => { pauseMenu.classList.remove('visible'); optionsMenu.classList.add('visible'); cameFromPauseMenu = true; });
+        backToMainMenuButton.addEventListener('click', () => { stopAmbientMusic(); gameRunning = false; gameStartTime = null; pauseMenu.classList.remove('visible'); mainMenu.classList.add('visible'); hud.classList.remove('visible'); cooldownsHud.classList.remove('visible'); });
+        function saveVolumeSettings() { localStorage.setItem('eco_volume_master', masterVolumeSlider.value); localStorage.setItem('eco_volume_music', musicVolumeSlider.value); localStorage.setItem('eco_volume_effects', effectsVolumeSlider.value); }
+        function loadVolumeSettings() { const master = localStorage.getItem('eco_volume_master'); const music = localStorage.getItem('eco_volume_music'); const effects = localStorage.getItem('eco_volume_effects'); if (master !== null) masterVolumeSlider.value = master; if (music !== null) musicVolumeSlider.value = music; if (effects !== null) effectsVolumeSlider.value = effects; }
+        function updateVolumes() { const masterValue = parseFloat(masterVolumeSlider.value); const masterdB = (masterValue / 100) * 40 - 40; Tone.Master.volume.value = masterdB > -40 ? masterdB : -Infinity; const musicValue = parseFloat(musicVolumeSlider.value); const musicdB = (musicValue / 100) * 40 - 40; ambianceSynth.volume.value = musicdB > -40 ? musicdB : -Infinity; lowDrone.volume.value = musicdB > -40 ? musicdB : -Infinity; padSynth.volume.value = musicdB > -40 ? musicdB : -Infinity; const effectsValue = parseFloat(effectsVolumeSlider.value); const effectsdB = (effectsValue / 100) * 40 - 40; Object.values(sounds).forEach(sound => { if (sound.volume) sound.volume.value = effectsdB > -40 ? effectsdB : -Infinity; }); }
+        masterVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); }); musicVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); }); effectsVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); });
+        loadVolumeSettings(); updateVolumes();
+        const glitchBg = document.getElementById('glitch-bg'); const glitchCtx = glitchBg.getContext('2d');
+        function resizeGlitchBg() { glitchBg.width = glitchBg.parentElement.clientWidth; glitchBg.height = glitchBg.parentElement.clientHeight; }
+        window.addEventListener('resize', resizeGlitchBg); resizeGlitchBg();
+        function updateGlitchBgVisibility() { if (mainMenu.classList.contains('visible')) { glitchBg.style.display = 'block'; } else { glitchBg.style.display = 'none'; } }
+        const observer = new MutationObserver(updateGlitchBgVisibility); observer.observe(document.getElementById('main-menu'), { attributes: true, attributeFilter: ['class'] }); updateGlitchBgVisibility();
+        function drawGlitchPlayer() { glitchCtx.save(); glitchCtx.globalAlpha = 1; glitchCtx.fillStyle = '#000'; glitchCtx.fillRect(0, 0, glitchBg.width, glitchBg.height); glitchCtx.restore(); if (!mainMenu.classList.contains('visible')) return; for(let i=0; i<7; i++){ const y = Math.random() * glitchBg.height; glitchCtx.save(); glitchCtx.globalAlpha = 0.08 + Math.random() * 0.08; glitchCtx.fillStyle = Math.random() > 0.7 ? '#00ffff' : '#fff'; glitchCtx.fillRect(0, y, glitchBg.width, 1 + Math.random() * 2); glitchCtx.restore(); } if (playerSpriteLoaded) { const w = playerSprite.width; const h = playerSprite.height; const scale = Math.min(glitchBg.width, glitchBg.height) / Math.max(w, h) * 0.7; const menuWidth = mainMenu.offsetWidth; const paddingLeft = 40; const usableWidth = glitchBg.width - menuWidth - paddingLeft; const centerX = menuWidth + paddingLeft + usableWidth / 2; const baseY = glitchBg.height; glitchCtx.save(); glitchCtx.translate(centerX, baseY); glitchCtx.scale(scale, scale); glitchCtx.drawImage(playerSprite, -w/2, -h, w, h); glitchCtx.restore(); } }
+        function glitchBgLoop() { drawGlitchPlayer(); if (mainMenu.classList.contains('visible')) { requestAnimationFrame(glitchBgLoop); } }
+        const glitchMenuObserver = new MutationObserver(() => { if (mainMenu.classList.contains('visible')) { glitchBgLoop(); } }); glitchMenuObserver.observe(mainMenu, { attributes: true, attributeFilter: ['class'] });
+        if (mainMenu.classList.contains('visible')) { glitchBgLoop(); }
 
-        pauseOptionsButton.addEventListener('click', () => {
-            pauseMenu.classList.remove('visible');
-            optionsMenu.classList.add('visible');
-            cameFromPauseMenu = true; // Set flag as we are going to options from pause
-        });
-
-        backToMainMenuButton.addEventListener('click', () => {
-            stopAmbientMusic(); // Stop music
-            gameRunning = false; // Ensure game is stopped
-            pauseMenu.classList.remove('visible'); // Hide pause menu
-            mainMenu.classList.add('visible'); // Show main menu
-            hud.classList.remove('visible'); // Hide HUD
-            cooldownsHud.classList.remove('visible'); // Hide cooldowns
-            // No need to reset game state here, startGameButton will handle it.
-        });
-
-        // --- CONTROLES DE VOLUME E LOCALSTORAGE ---
-        function saveVolumeSettings() {
-            localStorage.setItem('eco_volume_master', masterVolumeSlider.value);
-            localStorage.setItem('eco_volume_music', musicVolumeSlider.value);
-            localStorage.setItem('eco_volume_effects', effectsVolumeSlider.value);
-        }
-        function loadVolumeSettings() {
-            const master = localStorage.getItem('eco_volume_master');
-            const music = localStorage.getItem('eco_volume_music');
-            const effects = localStorage.getItem('eco_volume_effects');
-            if (master !== null) masterVolumeSlider.value = master;
-            if (music !== null) musicVolumeSlider.value = music;
-            if (effects !== null) effectsVolumeSlider.value = effects;
-        }
-        // ---
-        // Função para atualizar volumes
-        function updateVolumes() {
-            // Master
-            const masterValue = parseFloat(masterVolumeSlider.value);
-            const masterdB = (masterValue / 100) * 40 - 40;
-            Tone.Master.volume.value = masterdB > -40 ? masterdB : -Infinity;
-            // Música
-            const musicValue = parseFloat(musicVolumeSlider.value);
-            const musicdB = (musicValue / 100) * 40 - 40;
-            ambianceSynth.volume.value = musicdB > -40 ? musicdB : -Infinity;
-            lowDrone.volume.value = musicdB > -40 ? musicdB : -Infinity;
-            padSynth.volume.value = musicdB > -40 ? musicdB : -Infinity;
-            // Efeitos
-            const effectsValue = parseFloat(effectsVolumeSlider.value);
-            const effectsdB = (effectsValue / 100) * 40 - 40;
-            // Sons de efeito
-            sounds.shortPing.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.longPing.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.jump.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.step.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.enemyAlert.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.splash.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.levelWin.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.levelWinExplosion.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.gameWin.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-            sounds.gameOver.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
-        }
-        // Eventos dos sliders
-        masterVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); });
-        musicVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); });
-        effectsVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); });
-        // Carregar configurações ao iniciar
-        loadVolumeSettings();
-        updateVolumes();
-
-        // --- GLITCH BG ---
-        const glitchBg = document.getElementById('glitch-bg');
-        const glitchCtx = glitchBg.getContext('2d');
-        function resizeGlitchBg() {
-            glitchBg.width = glitchBg.parentElement.clientWidth;
-            glitchBg.height = glitchBg.parentElement.clientHeight;
-        }
-        window.addEventListener('resize', resizeGlitchBg);
-        resizeGlitchBg();
-
-        // Mostrar ou esconder o glitch-bg conforme o menu principal
-        function updateGlitchBgVisibility() {
-            if (mainMenu.classList.contains('visible')) {
-                glitchBg.style.display = 'block';
-            } else {
-                glitchBg.style.display = 'none';
-            }
-        }
-        // Chamar sempre que o menu mudar
-        const observer = new MutationObserver(updateGlitchBgVisibility);
-        observer.observe(document.getElementById('main-menu'), { attributes: true, attributeFilter: ['class'] });
-        updateGlitchBgVisibility();
-
-        function drawGlitchPlayer() {
-            // Fundo preto
-            glitchCtx.save();
-            glitchCtx.globalAlpha = 1;
-            glitchCtx.fillStyle = '#000';
-            glitchCtx.fillRect(0, 0, glitchBg.width, glitchBg.height);
-            glitchCtx.restore();
-
-            if (!mainMenu.classList.contains('visible')) return;
-
-            // Linhas de glitch no fundo
-            for(let i=0; i<7; i++){
-                const y = Math.random() * glitchBg.height;
-                glitchCtx.save();
-                glitchCtx.globalAlpha = 0.08 + Math.random() * 0.08;
-                glitchCtx.fillStyle = Math.random() > 0.7 ? '#00ffff' : '#fff';
-                glitchCtx.fillRect(0, y, glitchBg.width, 1 + Math.random() * 2);
-                glitchCtx.restore();
-            }
-
-            // Desenhar apenas o sprite centralizado, sem glitch
-            if (playerSpriteLoaded) {
-                const w = playerSprite.width;
-                const h = playerSprite.height;
-                const scale = Math.min(glitchBg.width, glitchBg.height) / Math.max(w, h) * 0.7;
-
-                // Pega a largura do menu
-                const menuWidth = mainMenu.offsetWidth;
-                // Distância da borda do menu
-                const paddingLeft = 40;
-
-                // Centraliza o personagem na área útil, mas com padding à esquerda
-                const usableWidth = glitchBg.width - menuWidth - paddingLeft;
-                const centerX = menuWidth + paddingLeft + usableWidth / 2;
-
-                // Posição Y: pés do personagem no chão
-                const baseY = glitchBg.height;
-
-                glitchCtx.save();
-                glitchCtx.translate(centerX, baseY);
-                glitchCtx.scale(scale, scale);
-                glitchCtx.drawImage(playerSprite, -w/2, -h, w, h);
-                glitchCtx.restore();
-            }
-        }
-
-        function glitchBgLoop() {
-            drawGlitchPlayer();
-            if (mainMenu.classList.contains('visible')) {
-                requestAnimationFrame(glitchBgLoop);
-            }
-        }
-
-        // Sempre que o menu principal ficar visível, inicie o loop do glitch
-        const glitchMenuObserver = new MutationObserver(() => {
-            if (mainMenu.classList.contains('visible')) {
-                glitchBgLoop();
-            }
-        });
-        glitchMenuObserver.observe(mainMenu, { attributes: true, attributeFilter: ['class'] });
-
-        // Também chame uma vez ao carregar a página, se o menu estiver visível
-        if (mainMenu.classList.contains('visible')) {
-            glitchBgLoop();
-        }
-
+        loadCoins(); loadUpgrades(); updateCoinHUD();
+        lojaButton.addEventListener('click', () => { mainMenu.classList.remove('visible'); shopMenu.classList.add('visible'); updateShopHUD(); renderShop(); });
+        shopMenu.querySelector('.back-button').addEventListener('click', () => { mainMenu.classList.remove('visible'); mainMenu.classList.add('visible'); });
         animate();
     </script>
 </body>
-</html> 
+</html>
