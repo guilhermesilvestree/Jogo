@@ -652,11 +652,7 @@
             constructor(x, y) { this.width = 25; this.height = 45; this.startPosition = { x, y }; this.position = { x, y }; this.velocity = { x: 1, y: 0 }; this.speed = 1; this.state = 'patrol'; this.target = null; this.revealTime = 0; this.onGround = false; }
             reset() { this.position = { ...this.startPosition }; this.state = 'patrol'; this.target = null; this.velocity.x = this.speed; }
             draw() {
-                if (Date.now() < this.revealTime) {
-                    const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 1000);
-                    ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`; ctx.beginPath();
-                    ctx.moveTo(this.position.x, this.position.y + this.height); ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7); ctx.lineTo(this.position.x + this.width, this.position.y + this.height); ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5); ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true); ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5); ctx.closePath(); ctx.fill();
-                }
+                // Remover debug visual
             }
             update(player, platforms, noises) {
                 this.onGround = false;
@@ -665,17 +661,29 @@
                 this.position.x += this.velocity.x;
 
                 for (const platform of platforms) {
-                    // Vertical collision
+                    // Colisão vertical
                     if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
                         this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height;
                     }
-                    // Horizontal collision
+                    // Colisão horizontal
                     if (this.isCollidingWith(platform)) {
                         if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) {
                             this.position.x = platform.position.x - this.width; this.velocity.x *= -1;
                         } else if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) {
                             this.position.x = platform.position.x + platform.width; this.velocity.x *= -1;
                         }
+                    }
+                }
+                // Verificação extra: se está exatamente sobre uma plataforma, considerar onGround
+                for (const platform of platforms) {
+                    if (
+                        Math.abs(this.position.y + this.height - platform.position.y) < 2 &&
+                        this.position.x + this.width > platform.position.x &&
+                        this.position.x < platform.position.x + platform.width
+                    ) {
+                        this.velocity.y = 0;
+                        this.onGround = true;
+                        this.position.y = platform.position.y - this.height;
                     }
                 }
                 this.handleAI(player, platforms, noises);
@@ -795,11 +803,11 @@
         // --- DADOS DAS FASES ---
         // ID: 001(criação fase)
         const levelData = [
-            { name: "O Despertar", playerStart: { x: 50, y: 500 }, platforms: [ {x: 0, y: 580, w: 1000, h: 20}, {x: 250, y: 520, w: 150, h: 20}, {x: 500, y: 460, w: 150, h: 20}, {x: 300, y: 380, w: 100, h: 20}, {x: 500, y: 300, w: 200, h: 20} ], enemies: [], water: [], acid: [], loreOrbs: [], exit: { x: 650, y: 240, width: 50, height: 60 } },
-            { name: "Os Primeiros Ecos", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 150, y: 500, w: 100, h: 20 }, { x: 350, y: 440, w: 300, h: 20 }, { x: 750, y: 380, w: 100, h: 20 }, { x: 550, y: 300, w: 100, h: 20 }, { x: 200, y: 250, w: 250, h: 20 }, ], enemies: [ { x: 400, y: 395 }, { x: 220, y: 205 }, { x: 560, y: 255 } ], water: [], acid: [], loreOrbs: [], exit: { x: 220, y: 190, width: 50, height: 60 } },
-            { name: "A Caverna Inundada", playerStart: { x: 50, y: 200 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 0, y: 260, w: 200, h: 20 }, { x: 250, y: 350, w: 100, h: 20 }, { x: 400, y: 430, w: 10, h: 150 }, { x: 600, y: 450, w: 200, h: 20 }, ], enemies: [ { x: 100, y: 535 }, { x: 620, y: 405 }, { x: 260, y: 305 } ], water: [ { x: 0, y: 560, w: 400, h: 20 } ], acid: [{x: 410, y: 560, w: 190, h: 20}], loreOrbs: [], exit: { x: 750, y: 390, width: 50, height: 60 } },
-            { name: "A Fenda dos Sussurros", playerStart: { x: 80, y: 120 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 50, y: 180, w: 150, h: 20 }, { x: 300, y: 250, w: 100, h: 20 }, { x: 100, y: 350, w: 100, h: 20 }, { x: 250, y: 450, w: 100, h: 20 }, { x: 500, y: 500, w: 100, h: 20 }, { x: 650, y: 420, w: 100, h: 20 }, { x: 800, y: 340, w: 150, h: 20 }, { x: 600, y: 260, w: 100, h: 20 }, { x: 750, y: 180, w: 100, h: 20 }, { x: 900, y: 120, w: 100, h: 20 }, ], enemies: [ { x: 150, y: 535 }, { x: 810, y: 295 }, { x: 610, y: 215 }, { x: 110, y: 305}, { x: 260, y: 405} ], water: [], acid: [ { x: 450, y: 560, w: 400, h: 20 } ], loreOrbs: [], exit: { x: 925, y: 60, width: 50, height: 60 } },
-            { name: "O Coração da Escuridão", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 850, y: 500, w: 150, h: 20 }, { x: 0, y: 420, w: 750, h: 20 }, { x: 200, y: 320, w: 150, h: 20 }, { x: 450, y: 150, w: 20, h: 100 }, { x: 550, y: 220, w: 200, h: 20 }, { x: 200, y: 150, w: 200, h: 20 }, ], enemies: [ { x: 300, y: 375 }, { x: 600, y: 175 }, { x: 100, y: 535 }, { x: 220, y: 105 }, { x: 880, y: 455}, { x: 650, y: 375} ], water: [], acid: [ { x: 750, y: 400, w: 100, h: 20}], loreOrbs: [], exit: { x: 250, y: 90, width: 50, height: 60 } }
+            { name: "O Despertar", playerStart: { x: 50, y: 500 }, platforms: [ {x: 0, y: 580, w: 1000, h: 20}, {x: 250, y: 520, w: 150, h: 20}, {x: 500, y: 460, w: 150, h: 20}, {x: 300, y: 380, w: 100, h: 20}, {x: 500, y: 300, w: 200, h: 20} ], enemies: [ { x: 400, y: 535 }, { x: 800, y: 535 } ], water: [], acid: [], loreOrbs: [], exit: { x: 650, y: 240, width: 50, height: 60 } },
+            { name: "Os Primeiros Ecos", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 150, y: 500, w: 100, h: 20 }, { x: 350, y: 440, w: 300, h: 20 }, { x: 750, y: 380, w: 100, h: 20 }, { x: 550, y: 300, w: 100, h: 20 }, { x: 200, y: 250, w: 250, h: 20 }, ], enemies: [ { x: 400, y: 395 }, { x: 220, y: 205 }, { x: 560, y: 255 }, { x: 800, y: 535 } ], water: [], acid: [], loreOrbs: [], exit: { x: 220, y: 190, width: 50, height: 60 } },
+            { name: "A Caverna Inundada", playerStart: { x: 50, y: 200 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 0, y: 260, w: 200, h: 20 }, { x: 250, y: 350, w: 100, h: 20 }, { x: 400, y: 430, w: 10, h: 150 }, { x: 600, y: 450, w: 200, h: 20 }, ], enemies: [ { x: 100, y: 535 }, { x: 620, y: 405 }, { x: 260, y: 305 }, { x: 800, y: 535 } ], water: [ { x: 0, y: 560, w: 400, h: 20 } ], acid: [{x: 410, y: 560, w: 190, h: 20}], loreOrbs: [], exit: { x: 750, y: 390, width: 50, height: 60 } },
+            { name: "A Fenda dos Sussurros", playerStart: { x: 80, y: 120 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 50, y: 180, w: 150, h: 20 }, { x: 300, y: 250, w: 100, h: 20 }, { x: 100, y: 350, w: 100, h: 20 }, { x: 250, y: 450, w: 100, h: 20 }, { x: 500, y: 500, w: 100, h: 20 }, { x: 650, y: 420, w: 100, h: 20 }, { x: 800, y: 340, w: 150, h: 20 }, { x: 600, y: 260, w: 100, h: 20 }, { x: 750, y: 180, w: 100, h: 20 }, { x: 900, y: 120, w: 100, h: 20 }, ], enemies: [ { x: 150, y: 535 }, { x: 810, y: 295 }, { x: 610, y: 215 }, { x: 260, y: 405 }, { x: 800, y: 535 } ], water: [], acid: [ { x: 450, y: 560, w: 400, h: 20 } ], loreOrbs: [], exit: { x: 925, y: 60, width: 50, height: 60 } },
+            { name: "O Coração da Escuridão", playerStart: { x: 50, y: 500 }, platforms: [ { x: 0, y: 580, w: 1000, h: 20 }, { x: 850, y: 500, w: 150, h: 20 }, { x: 0, y: 420, w: 750, h: 20 }, { x: 200, y: 320, w: 150, h: 20 }, { x: 450, y: 150, w: 20, h: 100 }, { x: 550, y: 220, w: 200, h: 20 }, { x: 200, y: 150, w: 200, h: 20 }, ], enemies: [ { x: 300, y: 375 }, { x: 600, y: 175 }, { x: 220, y: 105 }, { x: 880, y: 455 }, { x: 650, y: 375 }, { x: 800, y: 535 } ], water: [], acid: [ { x: 750, y: 400, w: 100, h: 20}], loreOrbs: [], exit: { x: 250, y: 90, width: 50, height: 60 } }
         ];
 
         const levels = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)) }));
@@ -1110,5 +1118,4 @@
         animate();
     </script>
 </body>
-</html> 
 </html> 
