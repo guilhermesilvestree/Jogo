@@ -321,7 +321,11 @@
             </div>
             <div class="option-item">
                 <label for="music-volume-slider">Volume da Música:</label>
-                <input type="range" id="music-volume-slider" min="0" max="100" value="70">
+                <input type="range" id="music-volume-slider" min="0" max="100" value="60">
+            </div>
+            <div class="option-item">
+                <label for="effects-volume-slider">Volume dos Efeitos:</label>
+                <input type="range" id="effects-volume-slider" min="0" max="100" value="75">
             </div>
             <button class="back-button">Voltar</button>
         </div>
@@ -361,6 +365,7 @@
         const backButtons = document.querySelectorAll('.back-button');
         const masterVolumeSlider = document.getElementById('master-volume-slider');
         const musicVolumeSlider = document.getElementById('music-volume-slider');
+        const effectsVolumeSlider = document.getElementById('effects-volume-slider');
 
         // Pause Menu elements
         const pauseMenu = document.getElementById('pause-menu');
@@ -537,7 +542,7 @@
 
         class Player {
             constructor() {
-                this.width = 22; this.height = 42; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
+                this.width = 50; this.height = 50; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
                 this.speed = 4; this.jumpForce = 12; this.onGround = false;
                 this.shortPingCooldown = 500; this.lastShortPing = 0;
                 this.longPingCooldown = 3000; this.lastLongPing = 0;
@@ -651,8 +656,23 @@
         class Enemy {
             constructor(x, y) { this.width = 25; this.height = 45; this.startPosition = { x, y }; this.position = { x, y }; this.velocity = { x: 1, y: 0 }; this.speed = 1; this.state = 'patrol'; this.target = null; this.revealTime = 0; this.onGround = false; }
             reset() { this.position = { ...this.startPosition }; this.state = 'patrol'; this.target = null; this.velocity.x = this.speed; }
-            draw() {
-                // Remover debug visual
+            draw(player) {
+                // Desenha o inimigo em vermelho se estiver revelado OU se o player estiver a menos de 150px
+                const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
+                if (Date.now() < this.revealTime || distanceToPlayer < 150) {
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                    ctx.beginPath();
+                    ctx.moveTo(this.position.x, this.position.y + this.height);
+                    ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7);
+                    ctx.lineTo(this.position.x + this.width, this.position.y + this.height);
+                    ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5);
+                    ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true);
+                    ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5);
+                    ctx.closePath();
+                    ctx.fill();
+                    ctx.restore();
+                }
             }
             update(player, platforms, noises) {
                 this.onGround = false;
@@ -915,7 +935,7 @@
             revealedObjects = revealedObjects.filter(ro => ro.draw());
             game.level.water.forEach(w => w.draw());
             game.level.acid.forEach(a => a.draw());
-            heartOfLight.draw(); player.draw(); enemies.forEach(e => e.draw()); /* loreOrbs.forEach(o => o.draw()); */ pings.forEach(p => p.draw());
+            heartOfLight.draw(); player.draw(); enemies.forEach(e => e.draw(player)); pings.forEach(p => p.draw());
             pings = pings.filter(p => p.active); noises = noises.filter(n => Date.now() - n.creationTime < 100);
 
             if(gameRunning) updateHUD();
@@ -1006,25 +1026,55 @@
             // No need to reset game state here, startGameButton will handle it.
         });
 
-
-        // Controles de volume
-        masterVolumeSlider.addEventListener('input', (e) => {
-            const value = parseFloat(e.target.value);
-            const dB = (value / 100) * 40 - 40; // Mapeia 0-100 para -40dB a 0dB (ou -Infinity para 0)
-            Tone.Master.volume.value = dB > -40 ? dB : -Infinity;
-        });
-
-        musicVolumeSlider.addEventListener('input', (e) => {
-            const value = parseFloat(e.target.value);
-            const dB = (value / 100) * 40 - 40; // Mapeia 0-100 para -40dB a 0dB (ou -Infinity para 0)
-            ambianceSynth.volume.value = dB > -40 ? dB : -Infinity;
-            lowDrone.volume.value = dB > -40 ? dB : -Infinity;
-            padSynth.volume.value = dB > -40 ? dB : -Infinity;
-        });
-
-        // Define os volumes iniciais
-        masterVolumeSlider.dispatchEvent(new Event('input'));
-        musicVolumeSlider.dispatchEvent(new Event('input'));
+        // --- CONTROLES DE VOLUME E LOCALSTORAGE ---
+        function saveVolumeSettings() {
+            localStorage.setItem('eco_volume_master', masterVolumeSlider.value);
+            localStorage.setItem('eco_volume_music', musicVolumeSlider.value);
+            localStorage.setItem('eco_volume_effects', effectsVolumeSlider.value);
+        }
+        function loadVolumeSettings() {
+            const master = localStorage.getItem('eco_volume_master');
+            const music = localStorage.getItem('eco_volume_music');
+            const effects = localStorage.getItem('eco_volume_effects');
+            if (master !== null) masterVolumeSlider.value = master;
+            if (music !== null) musicVolumeSlider.value = music;
+            if (effects !== null) effectsVolumeSlider.value = effects;
+        }
+        // ---
+        // Função para atualizar volumes
+        function updateVolumes() {
+            // Master
+            const masterValue = parseFloat(masterVolumeSlider.value);
+            const masterdB = (masterValue / 100) * 40 - 40;
+            Tone.Master.volume.value = masterdB > -40 ? masterdB : -Infinity;
+            // Música
+            const musicValue = parseFloat(musicVolumeSlider.value);
+            const musicdB = (musicValue / 100) * 40 - 40;
+            ambianceSynth.volume.value = musicdB > -40 ? musicdB : -Infinity;
+            lowDrone.volume.value = musicdB > -40 ? musicdB : -Infinity;
+            padSynth.volume.value = musicdB > -40 ? musicdB : -Infinity;
+            // Efeitos
+            const effectsValue = parseFloat(effectsVolumeSlider.value);
+            const effectsdB = (effectsValue / 100) * 40 - 40;
+            // Sons de efeito
+            sounds.shortPing.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.longPing.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.jump.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.step.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.enemyAlert.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.splash.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.levelWin.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.levelWinExplosion.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.gameWin.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            sounds.gameOver.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+        }
+        // Eventos dos sliders
+        masterVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); });
+        musicVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); });
+        effectsVolumeSlider.addEventListener('input', () => { updateVolumes(); saveVolumeSettings(); });
+        // Carregar configurações ao iniciar
+        loadVolumeSettings();
+        updateVolumes();
 
         // --- GLITCH BG ---
         const glitchBg = document.getElementById('glitch-bg');
