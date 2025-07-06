@@ -492,7 +492,9 @@
     <div class="game-container">
         <canvas id="glitch-bg"></canvas>
         <canvas id="gameCanvas"></canvas>
-        <div id="hud"></div>
+        <div id="hud">
+            <span></span>
+        </div>
         <div id="coin-hud">
             <div class="coin-display-center">
                 <span class="coin-icon-center">🪙</span>
@@ -1147,8 +1149,18 @@
                 const sprite = deathSprites[frameIndex];
                 if (!sprite) return;
                 
+                // Adicionar efeito de fundo escuro durante a morte
                 ctx.save();
-                ctx.globalAlpha = 0.8;
+                ctx.globalAlpha = 0.3;
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+                
+                // Desenhar o sprite de morte
+                ctx.save();
+                ctx.globalAlpha = 1.0;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
                 ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, this.position.x, this.position.y, this.width, this.height);
                 ctx.restore();
             }
@@ -1211,7 +1223,8 @@
                 pings = []; revealedObjects = []; noises = [];
                 coins = this.level.coins.map(c => { const coin = Object.assign(Object.create(Object.getPrototypeOf(c)), c); const coinId = getCoinId(levelIndex, coin); if (collectedCoins.includes(coinId)) coin.collected = true; return coin; });
                 showLevelIntro(this.level);
-                updateCoinHUD(); 
+                updateCoinHUD();
+                updateHUD(); 
             },
             restartLevel: function() {
                 loadGameState(currentSlotId); 
@@ -1255,7 +1268,7 @@
                                 player.resetDeathState();
                                 game.restartLevel(); 
                             }); 
-                        }, 400);
+                        }, 1000);
                         return; 
                     } 
                 } 
@@ -1270,7 +1283,7 @@
                             player.resetDeathState();
                             game.restartLevel(); 
                         }); 
-                    }, 400);
+                    }, 1000);
                     return; 
                 } 
             }
@@ -1309,25 +1322,61 @@
                 return;
             }
 
-            if (!game.level || !gameRunning) return;
+            if (!game.level) return;
             
-            player.update(game.level.platforms, game.level.water); 
-            enemies.forEach(e => e.update(player, game.level.platforms, noises)); 
-            if (gameRunning || isLevelEnding) { pings.forEach(p => p.update()); checkCollisionsAndReveal(); }
-            
+            // Desenhar elementos do nível mesmo quando o jogo não está rodando (para animação de morte)
             revealedObjects = revealedObjects.filter(ro => ro.draw());
-            game.level.water.forEach(w => w.draw()); game.level.acid.forEach(a => a.draw());
-            heartOfLight.draw(); coins.forEach(c => c.draw());
-            player.draw(); enemies.forEach(e => e.draw(player)); pings.forEach(p => p.draw());
-            pings = pings.filter(p => p.active); noises = noises.filter(n => Date.now() - n.creationTime < 100);
-            updateHUD();
+            game.level.water.forEach(w => w.draw()); 
+            game.level.acid.forEach(a => a.draw());
+            heartOfLight.draw(); 
+            coins.forEach(c => c.draw());
+            
+            // Desenhar o player (incluindo animação de morte)
+            if (player) {
+                player.draw(); 
+            }
+            
+            // Desenhar inimigos
+            if (enemies) {
+                enemies.forEach(e => e.draw(player)); 
+            }
+            
+            // Desenhar pings
+            if (pings) {
+                pings.forEach(p => p.draw());
+                pings = pings.filter(p => p.active); 
+            }
+            
+            // Filtrar ruídos
+            if (noises) {
+                noises = noises.filter(n => Date.now() - n.creationTime < 100);
+            }
+            
+            // Atualizar lógica do jogo apenas se estiver rodando
+            if (gameRunning && player) {
+                player.update(game.level.platforms, game.level.water); 
+                enemies.forEach(e => e.update(player, game.level.platforms, noises)); 
+                pings.forEach(p => p.update()); 
+                checkCollisionsAndReveal();
+                updateHUD();
+            }
         }
 
         function updateHUD() {
             if (!game.level) return;
-            hud.firstChild.textContent = `Fase ${currentLevelIndex + 1}: ${game.level.name}`;
-            qCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastShortPing) / player.shortPingCooldown) * 100)}%`;
-            eCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastLongPing) / player.longPingCooldown) * 100)}%`;
+            
+            if (hud && hud.firstChild) {
+                hud.firstChild.textContent = `Fase ${currentLevelIndex + 1}: ${game.level.name}`;
+            }
+            
+            if (player && qCooldownFill) {
+                qCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastShortPing) / player.shortPingCooldown) * 100)}%`;
+            }
+            
+            if (player && eCooldownFill) {
+                eCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastLongPing) / player.longPingCooldown) * 100)}%`;
+            }
+            
             updateCoinHUD();
         }
 
