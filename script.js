@@ -301,6 +301,11 @@ playerSprite.src = 'assets/ecoskin.png';
 let playerSpriteLoaded = false;
 playerSprite.onload = () => { playerSpriteLoaded = true; };
 
+const enemySprite = new window.Image();
+enemySprite.src = 'assets/inimigo1.png';
+let enemySpriteLoaded = false;
+enemySprite.onload = () => { enemySpriteLoaded = true; };
+
 const deathSprites = [];
 const deathSpriteUrls = [
     'assets/morte/ecoskin-morte1.png',
@@ -318,7 +323,10 @@ deathSpriteUrls.forEach((url, index) => {
     deathSprites[index] = sprite;
 });
 
-setTimeout(() => { if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); } }, 2000);
+setTimeout(() => { 
+    if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); } 
+    if (!enemySpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo.'); } 
+}, 2000);
 
 class Player {
     constructor() {
@@ -495,7 +503,69 @@ class Player {
 }
 class Ping { constructor(x, y, maxRadius, duration, color, speed, particleCount) { this.position = { x, y }; this.radius = 0; this.maxRadius = maxRadius; this.duration = duration; this.color = color; this.speed = speed; this.creationTime = Date.now(); this.active = true; this.particles = []; for (let i = 0; i < particleCount; i++) { this.particles.push(new PingParticle(this.position.x, this.position.y, this.color)); } } update() { this.radius += this.speed; this.particles.forEach(p => { if (p.life > 0) p.update(); }); if (this.radius >= this.maxRadius) { this.radius = this.maxRadius; if (Date.now() - this.creationTime > 500) { this.active = false; } } } draw() { const elapsed = Date.now() - this.creationTime; const alpha = Math.max(0, 1 - elapsed / (this.duration * 0.5)); for (let i = 0; i < 3; i++) { ctx.beginPath(); const currentRadius = this.radius - i * 15; if (currentRadius > 0) { ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * (1 - i * 0.3)})`; ctx.lineWidth = 1 + (1 - alpha); ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2); ctx.stroke(); } } this.particles.forEach(p => { if (p.life > 0) p.draw(); }); } }
 class PingParticle { constructor(x, y, color) { this.x = x; this.y = y; const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 2 + 1; this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed; this.lifespan = 50 + Math.random() * 50; this.life = this.lifespan; this.color = color; } update() { this.x += this.vx; this.y += this.vy; this.life--; } draw() { ctx.fillStyle = this.color.replace('1)', `${this.life / this.lifespan})`); ctx.beginPath(); ctx.arc(this.x, this.y, 2, 0, Math.PI * 2); ctx.fill(); } }
-class Enemy { constructor(x, y) { this.width = 25; this.height = 45; this.startPosition = { x, y }; this.position = { x, y }; this.velocity = { x: 1, y: 0 }; this.speed = 1; this.state = 'patrol'; this.target = null; this.revealTime = 0; this.onGround = false; } reset() { this.position = { ...this.startPosition }; this.state = 'patrol'; this.target = null; this.velocity.x = this.speed; } draw(player) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (Date.now() < this.revealTime || distanceToPlayer < 150) { ctx.save(); ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; ctx.beginPath(); ctx.moveTo(this.position.x, this.position.y + this.height); ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7); ctx.lineTo(this.position.x + this.width, this.position.y + this.height); ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5); ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true); ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5); ctx.closePath(); ctx.fill(); ctx.restore(); } } update(player, platforms, noises) { this.onGround = false; this.velocity.y += GRAVITY; this.position.y += this.velocity.y; this.position.x += this.velocity.x; for (const platform of platforms) { if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } if (this.isCollidingWith(platform)) { if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) { this.position.x = platform.position.x - this.width; this.velocity.x *= -1; } else if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) { this.position.x = platform.position.x + platform.width; this.velocity.x *= -1; } } } for (const platform of platforms) { if (Math.abs(this.position.y + this.height - platform.position.y) < 2 && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } } this.handleAI(player, platforms, noises); } isCollidingWith(rect) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && this.position.y < rect.position.y + rect.height && this.position.y + this.height > rect.position.y; } handleAI(player, platforms, noises) { for (const noise of noises) { const distance = Math.hypot(this.position.x - noise.x, this.position.y - noise.y); if (distance < noise.radius * noise.intensity) { if (this.state === 'patrol') { GameAudio.sounds.enemyAlert.triggerAttackRelease("A4", "0.2s"); } this.state = 'investigating'; this.target = { x: noise.x, y: noise.y }; this.revealTime = Date.now() + 500; } } if (Date.now() < player.revealTime) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer < 200) { this.state = 'chasing'; this.target = player.position; } } if (this.state === 'patrol' && this.onGround) { const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1; const groundCheckY = this.position.y + this.height + 5; let groundAhead = false; for (const platform of platforms) { if (lookAheadX >= platform.position.x && lookAheadX <= platform.position.x + platform.width && groundCheckY >= platform.position.y && groundCheckY <= platform.position.y + platform.height) { groundAhead = true; break; } } if (!groundAhead) { this.velocity.x *= -1; } } switch (this.state) { case 'patrol': this.velocity.x = this.speed * Math.sign(this.velocity.x || 1); break; case 'investigating': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 1.5 * Math.sign(this.target.x - this.position.x); if (Math.abs(this.position.x - this.target.x) < 10) { this.state = 'patrol'; this.target = null; this.velocity.x = this.speed * Math.sign(this.velocity.x); } break; case 'chasing': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 2 * Math.sign(this.target.x - this.position.x); const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer > 400) { this.state = 'patrol'; this.target = null; } break; } } reveal() { this.revealTime = Date.now() + 3000; } }
+class Enemy { constructor(x, y) { this.width = 25; this.height = 45; this.startPosition = { x, y }; this.position = { x, y }; this.velocity = { x: 1, y: 0 }; this.speed = 1; this.state = 'patrol'; this.target = null; this.revealTime = 0; this.onGround = false; } reset() { this.position = { ...this.startPosition }; this.state = 'patrol'; this.target = null; this.velocity.x = this.speed; } draw(player) { 
+        const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); 
+        if (Date.now() < this.revealTime || distanceToPlayer < 150) { 
+            ctx.save(); 
+            
+            // Desenhar glow vermelho
+            const glowX = this.position.x + this.width / 2;
+            const glowY = this.position.y + this.height / 2;
+            const glowRadius = Math.max(this.width, this.height) * 0.6;
+            ctx.globalAlpha = 0.1;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ff0000';
+            ctx.beginPath();
+            ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.08)';
+            ctx.fill();
+            
+            // Desenhar sprite do inimigo
+            if (enemySpriteLoaded) {
+                ctx.globalAlpha = 0.9;
+                
+                // Calcular proporções para manter aspect ratio
+                const spriteAspectRatio = enemySprite.width / enemySprite.height;
+                const enemyAspectRatio = this.width / this.height;
+                
+                let drawWidth, drawHeight, drawX, drawY;
+                
+                if (spriteAspectRatio > enemyAspectRatio) {
+                    // Sprite é mais larga, ajustar pela altura
+                    drawHeight = this.height;
+                    drawWidth = this.height * spriteAspectRatio;
+                    drawX = this.position.x - (drawWidth - this.width) / 2;
+                    drawY = this.position.y;
+                } else {
+                    // Sprite é mais alta, ajustar pela largura
+                    drawWidth = this.width;
+                    drawHeight = this.width / spriteAspectRatio;
+                    drawX = this.position.x;
+                    drawY = this.position.y - (drawHeight - this.height) / 2;
+                }
+                
+                ctx.drawImage(
+                    enemySprite,
+                    0, 0, enemySprite.width, enemySprite.height,
+                    drawX, drawY, drawWidth, drawHeight
+                );
+            } else {
+                // Fallback para forma geométrica se a sprite não carregou
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; 
+                ctx.beginPath(); 
+                ctx.moveTo(this.position.x, this.position.y + this.height); 
+                ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7); 
+                ctx.lineTo(this.position.x + this.width, this.position.y + this.height); 
+                ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5); 
+                ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true); 
+                ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5); 
+                ctx.closePath(); 
+                ctx.fill(); 
+            }
+            
+            ctx.restore(); 
+        } 
+    } update(player, platforms, noises) { this.onGround = false; this.velocity.y += GRAVITY; this.position.y += this.velocity.y; this.position.x += this.velocity.x; for (const platform of platforms) { if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } if (this.isCollidingWith(platform)) { if (this.velocity.x > 0 && this.position.x + this.width - this.velocity.x <= platform.position.x) { this.position.x = platform.position.x - this.width; this.velocity.x *= -1; } else if (this.velocity.x < 0 && this.position.x - this.velocity.x >= platform.position.x + platform.width) { this.position.x = platform.position.x + platform.width; this.velocity.x *= -1; } } } for (const platform of platforms) { if (Math.abs(this.position.y + this.height - platform.position.y) < 2 && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) { this.velocity.y = 0; this.onGround = true; this.position.y = platform.position.y - this.height; } } this.handleAI(player, platforms, noises); } isCollidingWith(rect) { return this.position.x < rect.position.x + rect.width && this.position.x + this.width > rect.position.x && this.position.y < rect.position.y + rect.height && this.position.y + this.height > rect.position.y; } handleAI(player, platforms, noises) { for (const noise of noises) { const distance = Math.hypot(this.position.x - noise.x, this.position.y - noise.y); if (distance < noise.radius * noise.intensity) { if (this.state === 'patrol') { GameAudio.sounds.enemyAlert.triggerAttackRelease("A4", "0.2s"); } this.state = 'investigating'; this.target = { x: noise.x, y: noise.y }; this.revealTime = Date.now() + 500; } } if (Date.now() < player.revealTime) { const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer < 200) { this.state = 'chasing'; this.target = player.position; } } if (this.state === 'patrol' && this.onGround) { const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1; const groundCheckY = this.position.y + this.height + 5; let groundAhead = false; for (const platform of platforms) { if (lookAheadX >= platform.position.x && lookAheadX <= platform.position.x + platform.width && groundCheckY >= platform.position.y && groundCheckY <= platform.position.y + platform.height) { groundAhead = true; break; } } if (!groundAhead) { this.velocity.x *= -1; } } switch (this.state) { case 'patrol': this.velocity.x = this.speed * Math.sign(this.velocity.x || 1); break; case 'investigating': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 1.5 * Math.sign(this.target.x - this.position.x); if (Math.abs(this.position.x - this.target.x) < 10) { this.state = 'patrol'; this.target = null; this.velocity.x = this.speed * Math.sign(this.velocity.x); } break; case 'chasing': if (!this.target) { this.state = 'patrol'; return; } this.velocity.x = this.speed * 2 * Math.sign(this.target.x - this.position.x); const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); if (distanceToPlayer > 400) { this.state = 'patrol'; this.target = null; } break; } } reveal() { this.revealTime = Date.now() + 3000; } }
 class RevealedObject { constructor(platform, duration) { this.platform = platform; this.revealTime = Date.now(); this.duration = duration; } draw() { const elapsed = Date.now() - this.revealTime; if (elapsed > this.duration) return false; const alpha = 1 - (elapsed / this.duration); this.platform.draw(alpha); return true; } }
 class Platform { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; } draw(alpha = 1) { ctx.save(); ctx.globalAlpha = alpha; const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height); grad.addColorStop(0, '#334'); grad.addColorStop(0.5, '#223'); grad.addColorStop(1, '#112'); ctx.fillStyle = grad; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.7})`; ctx.lineWidth = 1; ctx.strokeRect(this.position.x, this.position.y, this.width, this.height); ctx.restore(); } }
 class HeartOfLight { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; this.revealTime = 0; this.isAbsorbed = false; } draw() { if (Date.now() < this.revealTime && !this.isAbsorbed) { const timeleft = this.revealTime - Date.now(); const alpha = Math.min(1, timeleft / 5000); const centerX = this.position.x + this.width / 2; const centerY = this.position.y + this.height / 2; const pulse = Math.sin(Date.now() / 200) * 5 + (this.width / 2); const gradient = ctx.createRadialGradient(centerX, centerY, 5, centerX, centerY, pulse); gradient.addColorStop(0, `rgba(255, 255, 180, ${alpha})`); gradient.addColorStop(0.8, `rgba(255, 255, 0, ${alpha * 0.8})`); gradient.addColorStop(1, `rgba(255, 200, 0, 0)`); ctx.fillStyle = gradient; ctx.beginPath(); ctx.arc(centerX, centerY, pulse, 0, Math.PI * 2); ctx.fill(); } } reveal() { this.revealTime = Date.now() + 5000; } absorb() { if (this.isAbsorbed) return; this.isAbsorbed = true; isLevelEnding = true; gameRunning = false; GameAudio.sounds.levelWinExplosion.triggerAttackRelease("2n"); pings.push(new Ping(this.position.x + this.width / 2, this.position.y + this.height / 2, canvas.width * 1.5, 1500, 'rgba(255, 255, 255, 0.9)', 25, 0)); setTimeout(() => { GameAudio.sounds.levelWin.triggerAttackRelease("C5", "0.5s"); currentLevelIndex++; saveGameState(); showMessage("Nível Concluído!", "A luz ressoa através de você.", "Próxima Fase", () => { isLevelEnding = false; game.loadLevel(currentLevelIndex); }); }, 1500); } }
