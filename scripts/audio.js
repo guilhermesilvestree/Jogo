@@ -10,6 +10,8 @@ const effectsVolumeSlider = document.getElementById('effects-volume-slider');
 // Objeto global para gerenciar todo o áudio do jogo
 const GameAudio = {
     audioReady: false,
+    isTense: false,
+    originalBpm: 120,
 
     // Definições de sons usando a biblioteca Tone.js
     sounds: {
@@ -30,28 +32,34 @@ const GameAudio = {
     // Sintetizadores e efeitos para música ambiente
     ambianceSynth: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sawtooth" }, envelope: { attack: 2, decay: 1, sustain: 0.5, release: 3 }, volume: -20 }).toDestination(),
     lowDrone: new Tone.FMSynth({ harmonicity: 0.5, modulationIndex: 1, envelope: { attack: 5, decay: 0.1, sustain: 1, release: 10 }, modulation: { type: "sine" }, detune: 0, volume: -25 }).toDestination(),
+    // --- NOVOS SONS PARA TENSÃO ---
+    heartbeat: new Tone.MembraneSynth({ pitchDecay: 0.2, octaves: 3, envelope: { attack: 0.001, decay: 0.25, sustain: 0 }, volume: -12 }).toDestination(),
+    alarmSynth: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 }, volume: -18 }).toDestination(),
+    
     shimmerReverb: new Tone.Reverb(5).toDestination(),
     delay: new Tone.FeedbackDelay("8n", 0.5).toDestination(),
-    padSynth: null, // Inicializado após a definição completa de GameAudio
+    padSynth: null,
     musicLoop: null,
+    // --- NOVOS LOOPS PARA TENSÃO ---
+    heartbeatLoop: null,
+    alarmLoop: null,
 
     /**
      * Inicia a reprodução da música ambiente do jogo.
      */
     startAmbientMusic: function () {
-        const self = this; // Captura o contexto do GameAudio
-        if (self.musicLoop) return; // Evita iniciar múltiplos loops
+        if (this.musicLoop) return;
+        Tone.Transport.bpm.value = this.originalBpm;
 
-        self.musicLoop = new Tone.Loop(time => {
-            self.padSynth.triggerAttackRelease("C3", "16n", time);
-            self.padSynth.triggerAttackRelease("G2", "16n", time + 0.5);
-            self.lowDrone.triggerAttackRelease("C1", "4n", time + Math.random() * 2);
+        this.musicLoop = new Tone.Loop(time => {
+            this.padSynth.triggerAttackRelease("C3", "16n", time);
+            this.padSynth.triggerAttackRelease("G2", "16n", time + 0.5);
+            this.lowDrone.triggerAttackRelease("C1", "4n", time + Math.random() * 2);
             if (Math.random() < 0.2) {
-                self.ambianceSynth.triggerAttackRelease(["C3", "Eb3", "G3"], "2n", time + Math.random() * 4);
+                this.ambianceSynth.triggerAttackRelease(["C3", "Eb3", "G3"], "2n", time + Math.random() * 4);
             }
-        }, "8n");
-        self.musicLoop.start(0); // Inicia o loop
-        Tone.Transport.start(); // Inicia o transporte de áudio do Tone.js
+        }, "8n").start(0);
+        Tone.Transport.start();
     },
 
     /**
@@ -60,18 +68,75 @@ const GameAudio = {
     stopAmbientMusic: function () {
         if (this.musicLoop) {
             this.musicLoop.stop();
-            this.musicLoop.dispose(); // Libera os recursos do loop
+            this.musicLoop.dispose();
             this.musicLoop = null;
         }
-        Tone.Transport.stop(); // Para o transporte de áudio do Tone.js
+        if (this.isTense) {
+            this.decreaseTension(0);
+        }
+        Tone.Transport.stop();
+    },
+    
+    /**
+     * Inicia a transição para a música de perseguição.
+     */
+    increaseTension: function(time = 1.0) {
+        if (this.isTense) return;
+        this.isTense = true;
+        
+        // --- EFEITOS DE TENSÃO MAIS AGRESSIVOS ---
+        Tone.Transport.bpm.rampTo(this.originalBpm * 1.6, time); 
+        this.lowDrone.harmonicity.rampTo(3.5, time);
+        this.lowDrone.volume.rampTo(-18, time); // Aumenta o volume do drone
+
+        // Inicia o loop de batimento cardíaco
+        if (!this.heartbeatLoop) {
+            this.heartbeatLoop = new Tone.Loop(loopTime => {
+                this.heartbeat.triggerAttackRelease("C1", "8n", loopTime);
+            }, "4n").start(0);
+        }
+        
+        // Inicia o loop do alarme
+        if (!this.alarmLoop) {
+            this.alarmLoop = new Tone.Loop(loopTime => {
+                if(Math.random() < 0.4) { // Toca esporadicamente
+                    this.alarmSynth.triggerAttackRelease("G#5", "16n", loopTime);
+                }
+            }, "2n").start(0);
+        }
     },
 
     /**
-     * Inicializa o contexto de áudio do Tone.js, necessário para a reprodução.
+     * Retorna a música ao estado normal.
+     */
+    decreaseTension: function(time = 2.0) {
+        if (!this.isTense) return;
+        this.isTense = false;
+
+        // Retorna os parâmetros ao normal
+        Tone.Transport.bpm.rampTo(this.originalBpm, time);
+        this.lowDrone.harmonicity.rampTo(0.5, time);
+        this.lowDrone.volume.rampTo(-25, time);
+
+        // Para e remove os loops de tensão
+        if (this.heartbeatLoop) {
+            this.heartbeatLoop.stop();
+            this.heartbeatLoop.dispose();
+            this.heartbeatLoop = null;
+        }
+        if (this.alarmLoop) {
+            this.alarmLoop.stop();
+            this.alarmLoop.dispose();
+            this.alarmLoop = null;
+        }
+    },
+
+    /**
+     * Inicia o contexto de áudio do Tone.js.
      */
     initAudio: async function () {
-        if (this.audioReady) return; // Evita inicializar múltiplas vezes
-        await Tone.start(); // Inicia o contexto de áudio
+        if (this.audioReady) return;
+        await Tone.start();
         this.audioReady = true;
     },
 
@@ -97,33 +162,36 @@ const GameAudio = {
     },
 
     /**
-     * Atualiza os volumes dos sintetizadores e efeitos com base nos sliders.
+     * Atualiza os volumes dos sintetizadores e efeitos.
      */
     updateVolumes: function () {
         const masterValue = parseFloat(masterVolumeSlider.value);
-        const masterdB = (masterValue / 100) * 40 - 40; // Converte para decibéis
-        Tone.Master.volume.value = masterdB > -40 ? masterdB : -Infinity; // Define o volume mestre
+        const masterdB = (masterValue / 100) * 40 - 40;
+        Tone.Master.volume.value = masterdB > -40 ? masterdB : -Infinity;
 
         const musicValue = parseFloat(musicVolumeSlider.value);
         const musicdB = (musicValue / 100) * 40 - 40;
-        this.ambianceSynth.volume.value = musicdB > -40 ? musicdB : -Infinity;
-        this.lowDrone.volume.value = musicdB > -40 ? musicdB : -Infinity;
-        this.padSynth.volume.value = musicdB > -40 ? musicdB : -Infinity;
+        const finalMusicVolume = musicdB > -40 ? musicdB : -Infinity;
+        
+        // Aplica o volume a todos os sons da música, incluindo os de tensão
+        this.ambianceSynth.volume.value = finalMusicVolume;
+        this.lowDrone.volume.value = this.isTense ? finalMusicVolume - 7 : finalMusicVolume; // Ajusta o volume do drone
+        this.padSynth.volume.value = finalMusicVolume;
+        this.heartbeat.volume.value = finalMusicVolume + 2; // Batimento cardíaco mais proeminente
+        this.alarmSynth.volume.value = finalMusicVolume - 6; // Alarme um pouco mais baixo para não irritar
 
         const effectsValue = parseFloat(effectsVolumeSlider.value);
         const effectsdB = (effectsValue / 100) * 40 - 40;
-        // Percorre todos os sons e atualiza seus volumes
+        const finalEffectsVolume = effectsdB > -40 ? effectsdB : -Infinity;
+
         Object.values(this.sounds).forEach(sound => {
-            if (sound.volume) sound.volume.value = effectsdB > -40 ? effectsdB : -Infinity;
+            if (sound.volume) sound.volume.value = finalEffectsVolume;
         });
     }
 };
 
-// Inicialização de padSynth após a definição de GameAudio para garantir que delay e shimmerReverb estejam disponíveis
 GameAudio.padSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 4, decay: 0, sustain: 1, release: 8 }, volume: -30 }).chain(GameAudio.delay, GameAudio.shimmerReverb, Tone.Destination);
 
-// --- LISTENERS DOS SLIDERS DE VOLUME ---
-// Adiciona listeners para atualizar e salvar as configurações de volume quando os sliders são movidos
 if (masterVolumeSlider) masterVolumeSlider.addEventListener('input', () => { GameAudio.updateVolumes(); GameAudio.saveVolumeSettings(); });
 if (musicVolumeSlider) musicVolumeSlider.addEventListener('input', () => { GameAudio.updateVolumes(); GameAudio.saveVolumeSettings(); });
 if (effectsVolumeSlider) effectsVolumeSlider.addEventListener('input', () => { GameAudio.updateVolumes(); GameAudio.saveVolumeSettings(); });
