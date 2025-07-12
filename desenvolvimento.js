@@ -5,6 +5,7 @@
 
 (function() {
     // Variáveis de controle globais para os cheats
+    window.DEV_MODE = true; // Habilita modo de desenvolvimento
     window.DEV_MODE_INVINCIBLE = false;
     window.DEV_MODE_REVEAL_MAP = false;
 
@@ -97,6 +98,10 @@
             <div class="dev-group">
                 <button id="dev-skip-level">Pular Nível</button>
                 <button id="dev-win-game">Vencer o Jogo</button>
+                <button id="dev-clear-leaderboard">Limpar Ranking</button>
+                <button id="dev-force-reset">Forçar Reset (Simula Segunda)</button>
+                <button id="dev-ranking-info">Info do Ranking</button>
+                <button id="dev-create-mock-data">Criar Dados Mock</button>
             </div>
             <div class="dev-group">
                 <button id="dev-invincible">Invencibilidade (OFF)</button>
@@ -142,6 +147,93 @@
             }
         });
 
+        document.getElementById('dev-clear-leaderboard').addEventListener('click', async () => {
+            if (confirm("ECO DEV: Tem certeza que deseja limpar o ranking da semana atual? Esta ação não pode ser desfeita.")) {
+                try {
+                    if (window.ecoGame.clearLeaderboard && typeof window.ecoGame.clearLeaderboard === 'function') {
+                        await window.ecoGame.clearLeaderboard();
+                        alert("ECO DEV: Ranking da semana limpo com sucesso!");
+                        
+                        // Atualiza o localStorage para indicar que foi resetado manualmente
+                        const weekStart = new Date();
+                        weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Segunda-feira
+                        weekStart.setHours(0, 0, 0, 0);
+                        localStorage.setItem('eco_lastLeaderboardReset', weekStart.getTime().toString());
+                        
+                        console.log("ECO DEV: Ranking limpo manualmente via painel de desenvolvimento");
+                    } else {
+                        alert("ECO DEV Error: Função de limpeza do ranking não encontrada.");
+                    }
+                } catch (error) {
+                    console.error("ECO DEV Error ao limpar ranking:", error);
+                    alert("ECO DEV Error: Falha ao limpar o ranking. Verifique o console para mais detalhes.");
+                }
+            }
+        });
+
+        document.getElementById('dev-force-reset').addEventListener('click', async () => {
+            if (confirm("ECO DEV: Forçar reset do ranking (simula segunda-feira)? Esta ação limpará o ranking e atualizará o timestamp de reset.")) {
+                try {
+                    if (window.ecoGame.clearLeaderboard && typeof window.ecoGame.clearLeaderboard === 'function') {
+                        await window.ecoGame.clearLeaderboard();
+                        
+                        // Força o timestamp para a semana atual (simula que é segunda-feira)
+                        const now = new Date();
+                        const weekStart = new Date(now);
+                        weekStart.setDate(now.getDate() - now.getDay() + 1); // Segunda-feira
+                        weekStart.setHours(0, 0, 0, 0);
+                        localStorage.setItem('eco_lastLeaderboardReset', weekStart.getTime().toString());
+                        
+                        alert("ECO DEV: Reset forçado executado com sucesso! Ranking limpo e timestamp atualizado.");
+                        console.log("ECO DEV: Reset forçado executado via painel de desenvolvimento");
+                        
+                        // Atualiza as estatísticas para mostrar as mudanças
+                        updateStatsDisplay();
+                    } else {
+                        alert("ECO DEV Error: Função de limpeza do ranking não encontrada.");
+                    }
+                } catch (error) {
+                    console.error("ECO DEV Error ao forçar reset:", error);
+                    alert("ECO DEV Error: Falha ao forçar reset. Verifique o console para mais detalhes.");
+                }
+            }
+        });
+
+        document.getElementById('dev-ranking-info').addEventListener('click', () => {
+            try {
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                
+                let info = `=== INFORMAÇÕES DO RANKING ===\n\n`;
+                info += `Data atual: ${now.toLocaleString()}\n`;
+                info += `Dia da semana: ${dayNames[dayOfWeek]}\n`;
+                info += `É segunda-feira: ${dayOfWeek === 1 ? 'Sim' : 'Não'}\n\n`;
+                
+                if (window.ecoGame.getNextResetInfo && typeof window.ecoGame.getNextResetInfo === 'function') {
+                    const resetInfo = window.ecoGame.getNextResetInfo();
+                    info += `Próximo reset: ${resetInfo.days} dias e ${resetInfo.hours} horas\n`;
+                    info += `Data do próximo reset: ${resetInfo.nextResetDate.toLocaleString()}\n\n`;
+                }
+                
+                const lastReset = localStorage.getItem('eco_lastLeaderboardReset');
+                if (lastReset) {
+                    const lastResetDate = new Date(parseInt(lastReset));
+                    info += `Último reset: ${lastResetDate.toLocaleString()}\n`;
+                } else {
+                    info += `Último reset: Nunca\n`;
+                }
+                
+                info += `\nTimestamp salvo: ${lastReset || 'Nenhum'}`;
+                
+                alert(info);
+                console.log("ECO DEV: Informações do ranking exibidas");
+            } catch (error) {
+                console.error("ECO DEV Error ao exibir informações do ranking:", error);
+                alert("ECO DEV Error: Falha ao exibir informações do ranking.");
+            }
+        });
+
         document.getElementById('dev-invincible').addEventListener('click', (e) => {
             window.DEV_MODE_INVINCIBLE = !window.DEV_MODE_INVINCIBLE;
             e.target.textContent = `Invencibilidade (${window.DEV_MODE_INVINCIBLE ? 'ON' : 'OFF'})`;
@@ -166,6 +258,22 @@
 
         document.getElementById('dev-refresh-stats').addEventListener('click', updateStatsDisplay);
         
+        document.getElementById('dev-create-mock-data').addEventListener('click', async () => {
+            if (confirm("ECO DEV: Criar 10 scores mockados no ranking para testes? Esta ação substituirá os dados existentes.")) {
+                try {
+                    if (window.ecoGame.createMockData && typeof window.ecoGame.createMockData === 'function') {
+                        await window.ecoGame.createMockData();
+                        console.log("ECO DEV: Dados mockados criados via painel de desenvolvimento");
+                    } else {
+                        alert("ECO DEV Error: Função de criação de dados mock não encontrada.");
+                    }
+                } catch (error) {
+                    console.error("ECO DEV Error ao criar dados mock:", error);
+                    alert("ECO DEV Error: Falha ao criar dados mock. Verifique o console para mais detalhes.");
+                }
+            }
+        });
+        
         updateStatsDisplay();
         setInterval(updateStatsDisplay, 2000);
     }
@@ -187,12 +295,28 @@
             const metadata = metadataStr ? JSON.parse(metadataStr) : {};
             const saveName = metadata.saveName || `Jogo ${currentSlotId}`;
 
+            // Informações do ranking
+            let rankingInfo = "Ranking: Não disponível";
+            if (window.ecoGame.getNextResetInfo && typeof window.ecoGame.getNextResetInfo === 'function') {
+                try {
+                    const resetInfo = window.ecoGame.getNextResetInfo();
+                    const lastReset = localStorage.getItem('eco_lastLeaderboardReset');
+                    const lastResetDate = lastReset ? new Date(parseInt(lastReset)).toLocaleDateString() : "Nunca";
+                    
+                    rankingInfo = `Ranking: ${resetInfo.days}d ${resetInfo.hours}h até reset<br>
+                    <strong>Último reset:</strong> <span>${lastResetDate}</span>`;
+                } catch (e) {
+                    rankingInfo = "Ranking: Erro ao carregar";
+                }
+            }
+
             statsDiv.innerHTML = `
                 <strong>Save Ativo:</strong> <span>${saveName}</span><br>
                 <strong>Slot ID:</strong> <span>${currentSlotId}</span><br>
                 <strong>Local:</strong> <span>${levelName}</span><br>
                 <strong>Fragmentos:</strong> <span>${totalCoins}</span><br>
-                <strong>Premium:</strong> <span>${isPremiumUnlocked ? 'Sim' : 'Não'}</span>
+                <strong>Premium:</strong> <span>${isPremiumUnlocked ? 'Sim' : 'Não'}</span><br>
+                <strong>${rankingInfo}</strong>
             `;
         } catch (e) {
             statsDiv.innerHTML = "Aguardando dados do jogo...";

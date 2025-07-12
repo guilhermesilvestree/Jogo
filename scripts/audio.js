@@ -159,6 +159,25 @@ const GameAudio = {
         if (master !== null) masterVolumeSlider.value = master;
         if (music !== null) musicVolumeSlider.value = music;
         if (effects !== null) effectsVolumeSlider.value = effects;
+        
+        // Atualiza o preenchimento visual dos sliders após carregar os valores
+        this.updateSliderFills();
+    },
+
+    /**
+     * Atualiza o preenchimento visual de todos os sliders de volume.
+     */
+    updateSliderFills: function () {
+        const sliders = [masterVolumeSlider, musicVolumeSlider, effectsVolumeSlider];
+        sliders.forEach(slider => {
+            if (slider) {
+                const min = slider.min || 0;
+                const max = slider.max || 100;
+                const value = slider.value;
+                const percent = ((value - min) / (max - min)) * 100;
+                slider.style.setProperty('--fill-percent', `${percent}%`);
+            }
+        });
     },
 
     /**
@@ -192,6 +211,18 @@ const GameAudio = {
 
 GameAudio.padSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 4, decay: 0, sustain: 1, release: 8 }, volume: -30 }).chain(GameAudio.delay, GameAudio.shimmerReverb, Tone.Destination);
 
-if (masterVolumeSlider) masterVolumeSlider.addEventListener('input', () => { GameAudio.updateVolumes(); GameAudio.saveVolumeSettings(); });
-if (musicVolumeSlider) musicVolumeSlider.addEventListener('input', () => { GameAudio.updateVolumes(); GameAudio.saveVolumeSettings(); });
-if (effectsVolumeSlider) effectsVolumeSlider.addEventListener('input', () => { GameAudio.updateVolumes(); GameAudio.saveVolumeSettings(); });
+if (masterVolumeSlider) masterVolumeSlider.addEventListener('input', () => { 
+    GameAudio.updateVolumes(); 
+    GameAudio.saveVolumeSettings(); 
+    GameAudio.updateSliderFills();
+});
+if (musicVolumeSlider) musicVolumeSlider.addEventListener('input', () => { 
+    GameAudio.updateVolumes(); 
+    GameAudio.saveVolumeSettings(); 
+    GameAudio.updateSliderFills();
+});
+if (effectsVolumeSlider) effectsVolumeSlider.addEventListener('input', () => { 
+    GameAudio.updateVolumes(); 
+    GameAudio.saveVolumeSettings(); 
+    GameAudio.updateSliderFills();
+});

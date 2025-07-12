@@ -2,6 +2,84 @@
 // JOGO: ECO-LOCALIZADOR (Edição Gemini)
 // =================================================================
 
+import { translations } from './languages.js';
+import { levelData } from "./scripts/mapData.js";
+
+// --- SISTEMA DE CONFIGURAÇÕES E IDIOMA ---
+const defaultSettings = {
+    language: 'pt',
+    masterVolume: 100,
+    musicVolume: 60,
+    effectsVolume: 75
+};
+let gameSettings = { ...defaultSettings };
+let currentLanguage = gameSettings.language;
+
+function saveSettings() {
+    localStorage.setItem('eco_game_settings', JSON.stringify(gameSettings));
+}
+
+function loadSettings() {
+    try {
+        const savedSettings = JSON.parse(localStorage.getItem('eco_game_settings'));
+        if (savedSettings) {
+            gameSettings = { ...defaultSettings, ...savedSettings };
+        }
+    } catch (error) {
+        console.error("Could not load settings, using defaults.", error);
+        gameSettings = { ...defaultSettings };
+    }
+    currentLanguage = gameSettings.language;
+}
+
+function applyTranslations() {
+    document.querySelectorAll('[data-translate-key]').forEach(element => {
+        const key = element.dataset.translateKey;
+        if (translations[currentLanguage] && translations[currentLanguage][key]) {
+            const textNode = Array.from(element.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '');
+            if (textNode) {
+                textNode.textContent = translations[currentLanguage][key];
+            } else {
+                element.textContent = translations[currentLanguage][key];
+            }
+        }
+    });
+
+    if (shopMenu.classList.contains('visible')) renderShop();
+    if (saveSlotMenu.classList.contains('visible')) renderSaveSlots();
+    if (pauseMenu.classList.contains('visible')) {
+        pauseLevelName.textContent = levels[currentLevelIndex]?.name || "";
+        pauseTimePlayed.textContent = formatTime(gameStartTime ? Date.now() - gameStartTime : 0);
+        pauseTotalCoins.textContent = totalCoins;
+    }
+    
+    updateCurrentSaveIndicator();
+    updateHUD();
+    
+    const newSaveInput = document.getElementById('new-save-name-input');
+    if(newSaveInput) newSaveInput.placeholder = translations[currentLanguage].saveNamePlaceholder;
+    
+    const playerNameInput = document.getElementById('player-name-input');
+    if(playerNameInput) playerNameInput.placeholder = translations[currentLanguage].playerNamePlaceholder;
+}
+
+function setLanguage(lang) {
+    if (!translations[lang]) lang = 'pt';
+    gameSettings.language = lang;
+    currentLanguage = lang;
+    saveSettings();
+    
+    const selectedDiv = document.getElementById('custom-select-trigger');
+    const options = document.querySelectorAll('#custom-select-items div');
+    options.forEach(option => {
+        if (option.getAttribute('data-value') === lang) {
+            selectedDiv.innerHTML = option.innerHTML;
+        }
+    });
+
+    applyTranslations();
+}
+
 // --- SETUP INICIAL ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -39,37 +117,35 @@ const newSaveNameInput = document.getElementById('new-save-name-input');
 const confirmSaveNameButton = document.getElementById('confirm-save-name-button');
 
 
-// --- NOVO SISTEMA DE SAVE SLOTS ---
+// --- SISTEMA DE SAVE SLOTS REFAVORADO ---
 let currentSlotId = null;
 let pendingSlotId = null;
 const TOTAL_SLOTS = 5;
 let gameContextLoaded = false;
 
-function getSaveKey(slotId, key) {
-    return `eco_save_${slotId}_${key}`;
-}
-
+// Função para verificar se o premium está desbloqueado
 function isPremiumUnlocked() {
     return localStorage.getItem('eco_premium_unlocked') === 'true';
 }
 
+const getSaveSlotKey = (slotId) => `eco_save_${slotId}`;
+
 function createNewSave(slotId, saveName) {
     currentSlotId = slotId;
-    upgradesState = { speed: 0, jump: 0, shortPing: 0, longPing: 0, health: 0, stealth: 0, vision: 0, luck: 0 };
-    totalCoins = 0;
-    collectedCoins = [];
-    currentLevelIndex = 0;
-    gameStartTime = null;
-
-    const metadata = {
+    const defaultUpgrades = { speed: 0, jump: 0, shortPing: 0, longPing: 0, health: 0, stealth: 0, vision: 0, luck: 0 };
+    const newSaveObject = {
         saveName: saveName,
-        levelName: levels[currentLevelIndex].name,
-        totalCoins: totalCoins,
-        lastSaved: new Date().toISOString()
+        lastSaved: new Date().toISOString(),
+        currentLevelIndex: 0,
+        levelName: levels[0].name,
+        totalCoins: 0,
+        upgrades: defaultUpgrades,
+        collectedCoins: [],
+        gameStartTime: null
     };
 
-    localStorage.setItem(getSaveKey(currentSlotId, 'metadata'), JSON.stringify(metadata));
-    saveGameState();
+    localStorage.setItem(getSaveSlotKey(slotId), JSON.stringify(newSaveObject));
+    loadGameState(slotId);
 
     gameContextLoaded = true;
     saveSlotMenu.classList.remove('visible');
@@ -80,60 +156,61 @@ function createNewSave(slotId, saveName) {
 }
 
 function loadGameState(slotId) {
-    const savedUpgrades = localStorage.getItem(getSaveKey(slotId, 'upgrades'));
-    upgradesState = savedUpgrades ? JSON.parse(savedUpgrades) : { speed: 0, jump: 0, shortPing: 0, longPing: 0, health: 0, stealth: 0, vision: 0, luck: 0 };
-
-    const savedCoins = localStorage.getItem(getSaveKey(slotId, 'totalCoins'));
-    totalCoins = savedCoins ? parseInt(savedCoins, 10) : 0;
-
-    const savedCollectedCoins = localStorage.getItem(getSaveKey(slotId, 'collectedCoins'));
-    collectedCoins = savedCollectedCoins ? JSON.parse(savedCollectedCoins) : [];
-
-    const savedLevel = localStorage.getItem(getSaveKey(slotId, 'level'));
-    currentLevelIndex = savedLevel ? parseInt(savedLevel, 10) : 0;
-
-    const savedTime = localStorage.getItem(getSaveKey(slotId, 'startTime'));
-    gameStartTime = savedTime ? parseInt(savedTime, 10) : null;
+    const savedDataRaw = localStorage.getItem(getSaveSlotKey(slotId));
+    if (savedDataRaw) {
+        const saveData = JSON.parse(savedDataRaw);
+        const defaultUpgrades = { speed: 0, jump: 0, shortPing: 0, longPing: 0, health: 0, stealth: 0, vision: 0, luck: 0 };
+        upgradesState = saveData.upgrades || defaultUpgrades;
+        totalCoins = saveData.totalCoins || 0;
+        collectedCoins = saveData.collectedCoins || [];
+        currentLevelIndex = saveData.currentLevelIndex || 0;
+        gameStartTime = saveData.gameStartTime || null;
+    } else {
+        upgradesState = { speed: 0, jump: 0, shortPing: 0, longPing: 0, health: 0, stealth: 0, vision: 0, luck: 0 };
+        totalCoins = 0;
+        collectedCoins = [];
+        currentLevelIndex = 0;
+        gameStartTime = null;
+    }
 }
 
 function saveGameState() {
     if (currentSlotId === null) return;
 
-    const oldMetadataStr = localStorage.getItem(getSaveKey(currentSlotId, 'metadata'));
-    const oldMetadata = oldMetadataStr ? JSON.parse(oldMetadataStr) : {};
+    const existingDataRaw = localStorage.getItem(getSaveSlotKey(currentSlotId));
+    const existingData = existingDataRaw ? JSON.parse(existingDataRaw) : {};
 
-    const metadata = {
-        saveName: oldMetadata.saveName || `Jogo Salvo ${currentSlotId}`,
-        levelName: levels[currentLevelIndex] ? levels[currentLevelIndex].name : "Novo Jogo",
+    const saveDataObject = {
+        saveName: existingData.saveName || `Jogo Salvo ${currentSlotId}`,
+        lastSaved: new Date().toISOString(),
+        currentLevelIndex: currentLevelIndex,
+        levelName: levels[currentLevelIndex]?.name || "Novo Jogo",
         totalCoins: totalCoins,
-        lastSaved: new Date().toISOString()
+        upgrades: upgradesState,
+        collectedCoins: collectedCoins,
+        gameStartTime: gameStartTime
     };
-
-    localStorage.setItem(getSaveKey(currentSlotId, 'metadata'), JSON.stringify(metadata));
-    localStorage.setItem(getSaveKey(currentSlotId, 'upgrades'), JSON.stringify(upgradesState));
-    localStorage.setItem(getSaveKey(currentSlotId, 'totalCoins'), totalCoins);
-    localStorage.setItem(getSaveKey(currentSlotId, 'collectedCoins'), JSON.stringify(collectedCoins));
-    localStorage.setItem(getSaveKey(currentSlotId, 'level'), currentLevelIndex);
-    if (gameStartTime) localStorage.setItem(getSaveKey(currentSlotId, 'startTime'), gameStartTime);
+    
+    localStorage.setItem(getSaveSlotKey(currentSlotId), JSON.stringify(saveDataObject));
 }
 
 function deleteSaveSlot(slotId) {
-    if (!confirm(`Tem certeza que deseja apagar este save? Esta ação não pode ser desfeita.`)) {
+    if (!confirm(translations[currentLanguage].deleteSaveConfirm)) {
         return;
     }
-    Object.keys(localStorage)
-        .filter(key => key.startsWith(`eco_save_${slotId}_`))
-        .forEach(key => localStorage.removeItem(key));
+    localStorage.removeItem(getSaveSlotKey(slotId));
     renderSaveSlots();
 }
 
 function updateCurrentSaveIndicator() {
     if (currentSlotId !== null) {
-        const metadataStr = localStorage.getItem(getSaveKey(currentSlotId, 'metadata'));
-        const metadata = metadataStr ? JSON.parse(metadataStr) : {};
-        const saveName = metadata.saveName || `Jogo Salvo ${currentSlotId}`;
+        const savedDataRaw = localStorage.getItem(getSaveSlotKey(currentSlotId));
+        if(!savedDataRaw) return;
+        const saveData = JSON.parse(savedDataRaw);
+        
+        const saveName = saveData.saveName || `Jogo Salvo ${currentSlotId}`;
         const isPremium = currentSlotId > 3;
-        currentSaveIndicator.innerHTML = `Jogo Ativo: ${isPremium ? '★' : ''} ${saveName} ${isPremium ? '★' : ''}`;
+        currentSaveIndicator.innerHTML = `${translations[currentLanguage].activeSave} ${isPremium ? '★' : ''} ${saveName} ${isPremium ? '★' : ''}`;
         currentSaveIndicator.style.display = 'block';
     } else {
         currentSaveIndicator.style.display = 'none';
@@ -143,37 +220,42 @@ function updateCurrentSaveIndicator() {
 function renderSaveSlots() {
     saveSlotsContainer.innerHTML = '';
     saveSlotBackButton.style.display = gameContextLoaded ? 'block' : 'none';
+    
+    setTimeout(() => {
+        saveSlotsContainer.classList.add('loaded');
+    }, 300);
 
     for (let i = 1; i <= TOTAL_SLOTS; i++) {
         const isPremiumSlot = i > 3;
-        const metadataStr = localStorage.getItem(getSaveKey(i, 'metadata'));
-        const metadata = metadataStr ? JSON.parse(metadataStr) : null;
+        const saveDataRaw = localStorage.getItem(getSaveSlotKey(i));
+        const saveData = saveDataRaw ? JSON.parse(saveDataRaw) : null;
 
         const slotDiv = document.createElement('div');
         slotDiv.className = `save-slot ${isPremiumSlot ? 'premium' : ''}`;
+        slotDiv.style.setProperty('--slot-index', i - 1);
 
-        let detailsHTML = '<div class="slot-details">Vazio</div>';
-        const saveName = metadata ? (metadata.saveName || `Jogo Salvo ${i}`) : `Jogo Salvo ${i}`;
+        let detailsHTML = `<div class="slot-details">${translations[currentLanguage].saveSlotEmpty}</div>`;
+        const saveName = saveData ? saveData.saveName : `Slot ${i}`;
 
-        if (metadata) {
+        if (saveData) {
             detailsHTML = `<div class="slot-details">
-                        Fase: ${metadata.levelName} | Moedas: ${metadata.totalCoins} 🪙
+                        ${translations[currentLanguage].hudLevel}: ${saveData.levelName} | Moedas: ${saveData.totalCoins} 🪙
                     </div>`;
         }
 
         slotDiv.innerHTML = `
-                    <div class="save-slot-info">
-                        <div class="slot-name">${isPremiumSlot ? '★' : ''} ${saveName} ${isPremiumSlot ? '★' : ''}</div>
-                        ${detailsHTML}
-                    </div>
-                    <div class="slot-actions">
-                        <button class="slot-play-button">${metadata ? 'Carregar' : 'Novo Jogo'}</button>
-                        <button class="slot-delete-button" ${!metadata ? 'disabled' : ''}>Apagar</button>
-                    </div>
-                `;
+            <div class="save-slot-info">
+                <div class="slot-name">${isPremiumSlot ? '★' : ''} ${saveName} ${isPremiumSlot ? '★' : ''}</div>
+                ${detailsHTML}
+            </div>
+            <div class="slot-actions">
+                <button class="slot-play-button">${saveData ? translations[currentLanguage].saveSlotLoad : translations[currentLanguage].saveSlotNewGame}</button>
+                <button class="slot-delete-button" ${!saveData ? 'disabled' : ''}>${translations[currentLanguage].saveSlotDelete}</button>
+            </div>
+        `;
 
         const playButton = slotDiv.querySelector('.slot-play-button');
-        if (metadata) {
+        if (saveData) {
             playButton.addEventListener('click', () => {
                 currentSlotId = i;
                 loadGameState(i);
@@ -186,7 +268,7 @@ function renderSaveSlots() {
         } else {
             playButton.addEventListener('click', () => {
                 if (isPremiumSlot && !isPremiumUnlocked()) {
-                    alert("Você precisa terminar o jogo ao menos uma vez para desbloquear os saves Premium!");
+                    alert(translations[currentLanguage].premiumUnlockAlert);
                     return;
                 }
                 pendingSlotId = i;
@@ -207,14 +289,14 @@ function renderSaveSlots() {
 
 // --- SISTEMA DA LOJA ---
 const upgrades = [
-    { key: 'speed', name: 'Velocidade +1', desc: 'Aumenta a velocidade do personagem.', price: 5, max: 3, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>' },
-    { key: 'jump', name: 'Pulo +2', desc: 'Aumenta a força do pulo.', price: 7, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>' },
-    { key: 'shortPing', name: 'Eco Curto Rápido', desc: 'Reduz o cooldown do Q.', price: 8, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>' },
-    { key: 'longPing', name: 'Eco Longo Rápido', desc: 'Reduz o cooldown do E.', price: 10, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.01 3.99c0-.05.04-.1.1-.1h15.8c.05 0 .1.04.1.1v15.8c0 .05-.04.1-.1.1H4.1c-.05 0-.1-.04-.1-.1z"></path><path d="M8.5 8.5c0-.06.04-.1.1-.1h6.8c.05 0 .1.04.1.1v6.8c0 .06-.04.1-.1.1H8.6c-.06 0-.1-.04-.1-.1z"></path><path d="M12 12c0-.06.04-.1.1-.1h-.2c.06 0 .1.04.1.1v-.2c0 .06-.04.1-.1.1h.2c-.06 0-.1-.04-.1-.1z"></path></svg>' },
-    { key: 'health', name: 'Vida Extra', desc: 'Aumenta a resistência a danos.', price: 15, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V12H7v-4h3V6c0-2.21 1.79-4 4-4h4v4h-2.81c-.7 0-1.19.59-1.19 1.19V8h4l-.5 4h-3.5v9.8c4.56-.93 8-4.96 8-9.8z"></path></svg>' },
-    { key: 'stealth', name: 'Furtividade', desc: 'Reduz o alcance de detecção dos inimigos.', price: 12, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' },
-    { key: 'vision', name: 'Visão Melhorada', desc: 'Aumenta o alcance dos ecos.', price: 20, max: 1, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' },
-    { key: 'luck', name: 'Sorte', desc: 'Aumenta a chance de encontrar moedas.', price: 25, max: 1, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>' },
+    { key: 'speed', nameKey: 'upgradeSpeedName', descKey: 'upgradeSpeedDesc', price: 5, max: 3, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l5-5-5-5M6 17l5-5-5-5"/></svg>' },
+    { key: 'jump', nameKey: 'upgradeJumpName', descKey: 'upgradeJumpDesc', price: 7, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>' },
+    { key: 'shortPing', nameKey: 'upgradeShortPingName', descKey: 'upgradeShortPingDesc', price: 8, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>' },
+    { key: 'longPing', nameKey: 'upgradeLongPingName', descKey: 'upgradeLongPingDesc', price: 10, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.01 3.99c0-.05.04-.1.1-.1h15.8c.05 0 .1.04.1.1v15.8c0 .05-.04.1-.1.1H4.1c-.05 0-.1-.04-.1-.1z"></path><path d="M8.5 8.5c0-.06.04-.1.1-.1h6.8c.05 0 .1.04.1.1v6.8c0 .06-.04.1-.1.1H8.6c-.06 0-.1-.04-.1-.1z"></path><path d="M12 12c0-.06.04-.1.1-.1h-.2c.06 0 .1.04.1.1v-.2c0 .06-.04.1-.1.1h.2c-.06 0-.1-.04-.1-.1z"></path></svg>' },
+    { key: 'health', nameKey: 'upgradeHealthName', descKey: 'upgradeHealthDesc', price: 15, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V12H7v-4h3V6c0-2.21 1.79-4 4-4h4v4h-2.81c-.7 0-1.19.59-1.19 1.19V8h4l-.5 4h-3.5v9.8c4.56-.93 8-4.96 8-9.8z"></path></svg>' },
+    { key: 'stealth', nameKey: 'upgradeStealthName', descKey: 'upgradeStealthDesc', price: 12, max: 2, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"></path><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>' },
+    { key: 'vision', nameKey: 'upgradeVisionName', descKey: 'upgradeVisionDesc', price: 20, max: 1, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>' },
+    { key: 'luck', nameKey: 'upgradeLuckName', descKey: 'upgradeLuckDesc', price: 25, max: 1, icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#00ffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"></path><line x1="12" y1="2" x2="12" y2="12"></line></svg>' },
 ];
 let upgradesState = {};
 
@@ -226,23 +308,27 @@ function renderShop() {
         const level = upgradesState[upg.key] || 0;
         const canBuy = totalCoins >= upg.price && level < upg.max;
         const isMax = level >= upg.max;
+        const name = translations[currentLanguage][upg.nameKey] || upg.nameKey;
+        const desc = translations[currentLanguage][upg.descKey] || upg.descKey;
+        const buyText = translations[currentLanguage].shopBuyButton;
+        const maxText = translations[currentLanguage].shopMaxButton;
         const itemDiv = document.createElement('div');
         itemDiv.className = `shop-item ${isMax ? 'maxed' : ''}`;
         itemDiv.innerHTML = `
-                    <div class="shop-item-content">
-                        <div class="shop-item-icon">${upg.icon}</div>
-                        <div class="shop-item-info">
-                            <span class="shop-item-name">${upg.name}</span>
-                            <span class="shop-item-desc">${upg.desc}</span>
-                        </div>
-                    </div>
-                    <div class="shop-item-actions">
-                        <span class="shop-item-price">${isMax ? '---' : upg.price} 🪙</span>
-                        <span class="shop-item-level">${level}/${upg.max}</span>
-                        <button class="shop-buy-button ${isMax ? 'maxed' : (canBuy ? 'available' : 'unavailable')}" ${!canBuy || isMax ? 'disabled' : ''}>
-                            ${isMax ? 'Máximo' : 'Comprar'}
-                        </button>
-                    </div>`;
+            <div class="shop-item-content">
+                <div class="shop-item-icon">${upg.icon}</div>
+                <div class="shop-item-info">
+                    <span class="shop-item-name">${name}</span>
+                    <span class="shop-item-desc">${desc}</span>
+                </div>
+            </div>
+            <div class="shop-item-actions">
+                <span class="shop-item-price">${isMax ? '---' : upg.price} 🪙</span>
+                <span class="shop-item-level">${level}/${upg.max}</span>
+                <button class="shop-buy-button ${isMax ? 'maxed' : (canBuy ? 'available' : 'unavailable')}" ${!canBuy || isMax ? 'disabled' : ''}>
+                    ${isMax ? maxText : buyText}
+                </button>
+            </div>`;
         const buyBtn = itemDiv.querySelector('.shop-buy-button');
         buyBtn.onclick = () => {
             if (totalCoins >= upg.price && (upgradesState[upg.key] || 0) < upg.max) {
@@ -264,7 +350,6 @@ let isLevelEnding = false;
 let isGameEnding = false;
 let gameStartTime = null;
 let cameFromPauseMenu = false;
-// NOVO: Variáveis para controlar os efeitos visuais de perseguição
 let isChased = false;
 let chaseVignetteOpacity = 0;
 
@@ -346,11 +431,8 @@ class Player {
         this.spawnTime = 0; this.breathOffset = 0;
         this.facing = 'right';
         this.deathState = null;
-
-        // NOVO: Propriedades para o efeito de tremor
         this.isShaking = false;
         this.shakeIntensity = 2;
-
         this.applyUpgrades();
     }
     applyUpgrades() {
@@ -379,7 +461,6 @@ class Player {
         this.breathOffset = Math.sin(Date.now() / 400) * 0.5;
         const alpha = (Date.now() < this.revealTime) ? 1 : 0.6;
 
-        // NOVO: Lógica do tremor
         let shakeX = 0;
         let shakeY = 0;
         if (this.isShaking) {
@@ -389,7 +470,6 @@ class Player {
 
         ctx.save();
         let flip = this.facing === 'left';
-        // Aplica o tremor à posição de desenho
         let px = this.position.x + shakeX;
         let py = this.position.y + shakeY;
 
@@ -743,7 +823,6 @@ class Enemy {
                 if (this.state !== 'chasing') {
                     this.chaseStartTime = Date.now();
                     GameAudio.increaseTension();
-                    // NOVO: Ativa os efeitos visuais
                     isChased = true;
                     if (player) player.isShaking = true;
                 }
@@ -802,7 +881,6 @@ class Enemy {
                     this.target = null;
                     this.chaseStartTime = null;
                     GameAudio.decreaseTension();
-                    // NOVO: Desativa os efeitos visuais
                     isChased = false;
                     if (player) player.isShaking = false;
                 }
@@ -854,7 +932,7 @@ class HeartOfLight {
             GameAudio.sounds.levelWin.triggerAttackRelease("C5", "0.5s");
             currentLevelIndex++;
             saveGameState();
-            showMessage("Nível Concluído!", "A luz ressoa através de você.", "Próxima Fase", () => {
+            showMessage("levelCompleteTitle", "levelCompleteText", "nextLevelButton", () => {
                 isLevelEnding = false;
                 game.loadLevel(currentLevelIndex);
             });
@@ -865,8 +943,6 @@ class AcidWater { constructor(x, y, width, height) { this.position = { x, y }; t
 class Coin { constructor(x, y) { this.x = x; this.y = y; this.radius = 14; this.collected = false; this.animation = Math.random() * Math.PI * 2; } draw() { if (this.collected) return; const pulse = Math.sin(Date.now() / 200 + this.animation) * 3; ctx.save(); ctx.beginPath(); ctx.arc(this.x + this.radius, this.y + this.radius + pulse, this.radius, 0, Math.PI * 2); ctx.fillStyle = 'gold'; ctx.shadowColor = '#fff200'; ctx.shadowBlur = 10; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore(); } isCollidingWith(player) { const px = player.position.x + player.width / 2; const py = player.position.y + player.height / 2; const dx = (this.x + this.radius) - px; const dy = (this.y + this.radius) - py; const dist = Math.sqrt(dx * dx + dy * dy); return dist < this.radius + Math.max(player.width, player.height) / 2 - 8; } }
 
 let currentLevelIndex = 0;
-
-import { levelData } from "./scripts/mapData.js";
 
 const levels = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)), coins: data.coins ? data.coins.map(c => new Coin(c.x, c.y)) : [] }));
 
@@ -904,74 +980,69 @@ const game = {
     },
     winGame: function () {
         if (isGameEnding) return;
-    
+
         gameRunning = false;
         isGameEnding = true;
         GameAudio.sounds.gameWin.triggerAttackRelease("C4", "5s");
         localStorage.setItem('eco_premium_unlocked', 'true');
-    
+
         const endTime = Date.now();
         const timeTaken = gameStartTime ? Math.round((endTime - gameStartTime) / 1000) : 0;
-        const minutes = Math.floor(timeTaken / 60);
-        const seconds = timeTaken % 60;
-        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    
+
         if (!player) {
             player = new Player();
             player.reset(canvas.width / 2, canvas.height / 2);
         }
-    
+
         player.finalAnimationState = {
             startY: player.position.y,
             y: player.position.y,
             alpha: 1,
             startTime: Date.now(),
             duration: 4000,
-            finalMessage: `Você escapou! Tempo: ${timeString}`,
-            particles: [],
+            timeTaken: timeTaken,
+            particles: [], 
             explosionTriggered: false
         };
-    
+
         const winAnimationLoop = () => {
-            if (!isGameEnding) {
-                return;
-            }
-    
+            if (!isGameEnding) return;
+
             const anim = player.finalAnimationState;
             const elapsed = Date.now() - anim.startTime;
             const progress = Math.min(elapsed / anim.duration, 1);
-    
-            anim.y = anim.startY - (progress * (canvas.height * 0.4)); 
-            anim.alpha = 1 - Math.max(0, (progress - 0.6) / 0.4); 
-    
-            if (progress < 0.9) {
-                if (Math.random() > 0.3) {
-                    anim.particles.push(new WinParticle(player.position.x + player.width / 2, anim.y + player.height / 2));
-                }
+
+            anim.y = anim.startY - (progress * (canvas.height * 0.4));
+            anim.alpha = 1 - Math.max(0, (progress - 0.6) / 0.4);
+
+            if (progress < 0.9 && Math.random() > 0.3) {
+                anim.particles.push(new WinParticle(player.position.x + player.width / 2, anim.y + player.height / 2));
             }
-    
+
             if (progress >= 1 && !anim.explosionTriggered) {
                 anim.explosionTriggered = true;
                 pings.push(new Ping(canvas.width / 2, canvas.height / 2, canvas.width, 1500, 'rgba(255, 255, 255, 0.9)', 30, 100));
-    
+
                 setTimeout(() => {
                     isGameEnding = false;
                     player.finalAnimationState = null;
-    
-                    showMessage("Vitória!", anim.finalMessage, "Menu Principal", () => {
+                    showMessage("victoryTitle", "victoryText", "mainMenuButton", () => {
                         mainMenu.classList.add('visible');
                         hud.classList.remove('visible');
                         cooldownsHud.classList.remove('visible');
                         document.getElementById('coin-hud').classList.remove('visible');
                         GameAudio.stopAmbientMusic();
-                    });
+                    }, anim.timeTaken);
                 }, 1000);
             }
-    
+
             requestAnimationFrame(winAnimationLoop);
         };
-    
+
         winAnimationLoop();
+        if (window.ecoGame && typeof window.ecoGame.saveScore === 'function') {
+            window.ecoGame.saveScore(timeTaken);
+        }
     }
 };
 
@@ -998,7 +1069,7 @@ function checkCollisionsAndReveal() {
                     player.isShaking = false;
                     player.startDeathAnimation();
                     setTimeout(() => {
-                        showMessage("Você foi Ouvido", "O silêncio era sua única defesa.", "Tentar Novamente", () => {
+                        showMessage("youWereHeardTitle", "youWereHeardText", "tryAgainButton", () => {
                             player.resetDeathState();
                             game.restartLevel();
                         });
@@ -1016,7 +1087,7 @@ function checkCollisionsAndReveal() {
                 player.isShaking = false;
                 player.startDeathAnimation();
                 setTimeout(() => {
-                    showMessage("Corroído", "A escuridão líquida te consome.", "Tentar Novamente", () => {
+                    showMessage("corrodedTitle", "corrodedText", "tryAgainButton", () => {
                         player.resetDeathState();
                         game.restartLevel();
                     });
@@ -1045,19 +1116,7 @@ function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (isGameEnding && player && player.finalAnimationState) {
-        const anim = player.finalAnimationState; anim.y -= 0.5; anim.pulse = Math.sin(Date.now() / 300) * 40 + 50;
-        ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * (1 - anim.alpha)})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
         player.draw();
-        if (anim.alpha > 0) { anim.alpha -= 0.005; }
-        else {
-            isGameEnding = false;
-            showMessage("Vitória!", anim.finalMessage, "Menu Principal", () => {
-                mainMenu.classList.add('visible');
-                hud.classList.remove('visible'); cooldownsHud.classList.remove('visible');
-                document.getElementById('coin-hud').classList.remove('visible');
-                GameAudio.stopAmbientMusic();
-            });
-        }
         return;
     }
 
@@ -1098,29 +1157,19 @@ function animate() {
         updateHUD();
     }
 
-    // NOVO: Lógica para desenhar a vinheta de perseguição
     if (isChased) {
-        if (chaseVignetteOpacity < 1) {
-            chaseVignetteOpacity += 0.05;
-        }
+        if (chaseVignetteOpacity < 1) chaseVignetteOpacity += 0.05;
     } else {
-        if (chaseVignetteOpacity > 0) {
-            chaseVignetteOpacity -= 0.05;
-        }
+        if (chaseVignetteOpacity > 0) chaseVignetteOpacity -= 0.05;
     }
     
     if (chaseVignetteOpacity > 0) {
         const pulse = Math.sin(Date.now() / 150) * 0.1 + 0.9;
         const finalOpacity = chaseVignetteOpacity * pulse;
-
         ctx.save();
-        const gradient = ctx.createRadialGradient(
-            canvas.width / 2, canvas.height / 2, canvas.width / 3,
-            canvas.width / 2, canvas.height / 2, canvas.width / 1.5
-        );
+        const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width / 3, canvas.width / 2, canvas.height / 2, canvas.width / 1.5);
         gradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
         gradient.addColorStop(1, `rgba(200, 0, 0, ${finalOpacity * 0.5})`);
-        
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
@@ -1129,27 +1178,45 @@ function animate() {
 
 function updateHUD() {
     if (!game.level) return;
-
     if (hud && hud.firstChild) {
-        hud.firstChild.textContent = `Fase ${currentLevelIndex + 1}: ${game.level.name}`;
+        hud.firstChild.textContent = `${translations[currentLanguage].hudLevel} ${currentLevelIndex + 1}: ${game.level.name}`;
     }
-
     if (player && qCooldownFill) {
         qCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastShortPing) / player.shortPingCooldown) * 100)}%`;
     }
-
     if (player && eCooldownFill) {
         eCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastLongPing) / player.longPingCooldown) * 100)}%`;
     }
-
     updateCoinHUD();
 }
 
-function showMessage(title, text, buttonText, callback) { messageTitle.textContent = title; messageText.textContent = text; messageOverlay.classList.add('visible'); const oldButton = document.getElementById('message-button'); const newButton = oldButton.cloneNode(true); oldButton.parentNode.replaceChild(newButton, oldButton); newButton.textContent = buttonText; newButton.addEventListener('click', async () => { await GameAudio.initAudio(); messageOverlay.classList.remove('visible'); callback(); }, { once: true }); }
+function showMessage(titleKey, textKey, buttonKey, callback, timeTaken) {
+    messageTitle.textContent = translations[currentLanguage][titleKey] || titleKey;
 
-async function showLevelIntro(level) {
-    const staticInstructions = currentLevelIndex === 0 ? "Use [A/D] ou Setas, [Espaço] para pular. [Q] é um eco curto, [E] é um eco longo. Aperte [ESC] para pausar." : "";
-    showMessage(`Nível ${currentLevelIndex + 1}: ${level.name}`, staticInstructions, "✨ Iniciar Fase ✨", () => { gameRunning = true; });
+    let textContent = translations[currentLanguage][textKey] || textKey;
+    if (titleKey === 'victoryTitle' && timeTaken !== undefined) {
+        const minutes = Math.floor(timeTaken / 60);
+        const seconds = timeTaken % 60;
+        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        textContent += ` ${translations[currentLanguage].victoryTime} ${timeString}`;
+    }
+    messageText.textContent = textContent;
+
+    messageOverlay.classList.add('visible');
+    const oldButton = document.getElementById('message-button');
+    const newButton = oldButton.cloneNode(true);
+    oldButton.parentNode.replaceChild(newButton, oldButton);
+    newButton.textContent = translations[currentLanguage][buttonKey] || buttonKey;
+    newButton.addEventListener('click', async () => {
+        await GameAudio.initAudio();
+        messageOverlay.classList.remove('visible');
+        if (callback) callback();
+    }, { once: true });
+}
+
+function showLevelIntro(level) {
+    const staticInstructions = currentLevelIndex === 0 ? translations[currentLanguage].levelIntroInstructions : "";
+    showMessage(`${translations[currentLanguage].hudLevel} ${currentLevelIndex + 1}: ${level.name}`, staticInstructions, "levelIntroButton", () => { gameRunning = true; });
 }
 
 function formatTime(ms) {
@@ -1186,9 +1253,7 @@ startGameButton.addEventListener('click', () => {
     hud.classList.add('visible');
     cooldownsHud.classList.add('visible');
     document.getElementById('coin-hud').classList.add('visible');
-
     if (!gameStartTime) gameStartTime = Date.now();
-
     GameAudio.startAmbientMusic();
     game.loadLevel(currentLevelIndex);
     updateGlitchBgVisibility();
@@ -1197,7 +1262,7 @@ startGameButton.addEventListener('click', () => {
 confirmSaveNameButton.addEventListener('click', () => {
     const name = newSaveNameInput.value.trim();
     if (!name) {
-        alert("Por favor, digite um nome para o save.");
+        alert(translations[currentLanguage].saveNameAlert);
         return;
     }
     createNewSave(pendingSlotId, name);
@@ -1217,7 +1282,6 @@ backButtons.forEach(button => {
     button.addEventListener('click', () => {
         const parentOverlay = button.closest('.overlay');
         parentOverlay.classList.remove('visible');
-
         if (cameFromPauseMenu && parentOverlay.id === 'options-menu') {
             pauseMenu.classList.add('visible');
         } else {
@@ -1245,6 +1309,7 @@ backToMainMenuButton.addEventListener('click', () => {
 changeSaveButton.addEventListener('click', () => {
     mainMenu.classList.remove('visible');
     saveSlotMenu.classList.add('visible');
+    saveSlotsContainer.classList.remove('loaded');
     renderSaveSlots();
     updateGlitchBgVisibility();
 });
@@ -1265,20 +1330,15 @@ menuObserver.observe(saveSlotMenu, { attributes: true, attributeFilter: ['class'
 
 function glitchBgLoop() {
     const showGlitch = mainMenu.classList.contains('visible');
-
     if (showGlitch) {
         drawGlitchPlayer();
-        requestAnimationFrame(glitchBgLoop);
-    } else {
-        requestAnimationFrame(glitchBgLoop);
     }
+    requestAnimationFrame(glitchBgLoop);
 }
 
 function drawGlitchPlayer() {
     glitchCtx.save(); glitchCtx.globalAlpha = 1; glitchCtx.fillStyle = '#000'; glitchCtx.fillRect(0, 0, glitchBg.width, glitchBg.height); glitchCtx.restore();
-
     for (let i = 0; i < 7; i++) { const y = Math.random() * glitchBg.height; glitchCtx.save(); glitchCtx.globalAlpha = 0.08 + Math.random() * 0.08; glitchCtx.fillStyle = Math.random() > 0.7 ? '#00ffff' : '#fff'; glitchCtx.fillRect(0, y, glitchBg.width, 1 + Math.random() * 2); glitchCtx.restore(); }
-
     if (playerSpriteLoaded) {
         const w = playerSprite.width; const h = playerSprite.height;
         const scale = Math.min(glitchBg.width, glitchBg.height) / Math.max(w, h) * 0.7;
@@ -1293,7 +1353,7 @@ function drawGlitchPlayer() {
 
 lojaButton.addEventListener('click', () => {
     if (currentSlotId === null) {
-        alert("Nenhum jogo carregado. Selecione um save para acessar a loja.");
+        alert(translations[currentLanguage].shopNoSave);
         return;
     }
     mainMenu.classList.remove('visible');
@@ -1306,7 +1366,9 @@ shopMenu.querySelector('.back-button').addEventListener('click', () => {
     mainMenu.classList.add('visible');
 });
 
-window.ecoGame = {
+window.ecoGame = window.ecoGame || {};
+
+Object.assign(window.ecoGame, {
     get game() { return game; },
     get player() { return player; },
     get enemies() { return enemies; },
@@ -1326,14 +1388,105 @@ window.ecoGame = {
     checkCollisionsAndReveal,
     Platform,
     Enemy,
-    HeartOfLight
-};
+    HeartOfLight,
+    get gameSettings() { return gameSettings; }
+});
+
+function setupVolumeSliders() {
+    const masterSlider = document.getElementById('master-volume-slider');
+    const musicSlider = document.getElementById('music-volume-slider');
+    const effectsSlider = document.getElementById('effects-volume-slider');
+
+    masterSlider.value = gameSettings.masterVolume;
+    musicSlider.value = gameSettings.musicVolume;
+    effectsSlider.value = gameSettings.effectsVolume;
+
+    const sliders = [masterSlider, musicSlider, effectsSlider];
+
+    function updateSliderFill(slider) {
+        const min = slider.min || 0;
+        const max = slider.max || 100;
+        const value = slider.value;
+        const percent = ((value - min) / (max - min)) * 100;
+        slider.style.setProperty('--fill-percent', `${percent}%`);
+    }
+
+    sliders.forEach(slider => {
+        updateSliderFill(slider);
+        slider.addEventListener('input', (e) => {
+            const slider = e.target;
+            updateSliderFill(slider);
+            
+            if (slider.id === 'master-volume-slider') gameSettings.masterVolume = slider.value;
+            if (slider.id === 'music-volume-slider') gameSettings.musicVolume = slider.value;
+            if (slider.id === 'effects-volume-slider') gameSettings.effectsVolume = slider.value;
+            
+            if (typeof GameAudio !== 'undefined' && GameAudio.updateVolumes) GameAudio.updateVolumes();
+            saveSettings();
+        });
+    });
+}
+
+function setupCustomSelect() {
+    const container = document.querySelector('.custom-select-container');
+    if (!container) return;
+
+    const trigger = container.querySelector('#custom-select-trigger');
+    const items = container.querySelector('#custom-select-items');
+    const originalParent = items.parentNode; 
+
+    const closeAllSelect = () => {
+        if (!items.classList.contains('select-hide')) {
+            items.classList.add('select-hide');
+            trigger.classList.remove('select-arrow-active');
+            originalParent.appendChild(items);
+        }
+    };
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wasHidden = items.classList.contains('select-hide');
+        
+        closeAllSelect();
+
+        if (wasHidden) {
+            document.body.appendChild(items);
+            const rect = trigger.getBoundingClientRect();
+            items.style.position = 'fixed';
+            items.style.top = `${rect.bottom + 4}px`;
+            items.style.left = `${rect.left}px`;
+            items.style.width = `${rect.width}px`;
+            items.classList.remove('select-hide');
+            trigger.classList.add('select-arrow-active');
+        }
+    });
+
+    items.querySelectorAll('div[data-value]').forEach(item => {
+        item.addEventListener('click', () => {
+            setLanguage(item.getAttribute('data-value'));
+        });
+    });
+    
+    document.addEventListener('click', closeAllSelect);
+    window.addEventListener('scroll', closeAllSelect, true);
+}
+
+
 // --- INICIALIZAÇÃO DO JOGO ---
 window.onload = () => {
+    loadSettings();
+    setupCustomSelect();
+    setLanguage(gameSettings.language);
+
+    saveSlotsContainer.classList.remove('loaded');
     renderSaveSlots();
     updateGlitchBgVisibility();
     glitchBgLoop();
-    GameAudio.loadVolumeSettings();
-    GameAudio.updateVolumes();
+    
+    if (typeof GameAudio !== 'undefined' && GameAudio.updateVolumes) {
+        GameAudio.updateVolumes();
+    }
+    
+    setupVolumeSliders();
     animate();
 };
