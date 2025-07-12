@@ -224,6 +224,32 @@ async function saveScore(time) {
                 weekStart: weekStart // Adiciona timestamp da semana
             });
             console.log("Nova pontuação salva com sucesso no ranking da semana!");
+            
+            // Envia webhook para entrada no top 10
+            const minutes = Math.floor(time / 60);
+            const seconds = time % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            const embed = {
+                title: '🏆 NOVO JOGADOR NO TOP 10!',
+                description: `Um jogador entrou no ranking semanal!`,
+                color: 0xffd700,
+                fields: [
+                    { name: 'Nome do Jogador', value: playerName, inline: true },
+                    { name: 'Tempo', value: timeString, inline: true },
+                    { name: 'Data', value: new Date().toLocaleString('pt-BR'), inline: false }
+                ],
+                timestamp: new Date().toISOString(),
+                footer: { text: 'ECO - Sistema de Logs' }
+            };
+            
+            // Envia o webhook
+            fetch('https://discord.com/api/webhooks/1393437919120986235/LKW8yaMuz94YdpNHJ0er1qyeTKMpGuzYZbhT5QA-9sGrjV7SM1ZkWYPAcYEroEbhE3mr', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ embeds: [embed] })
+            }).catch(console.error);
+            
         } else {
             // Se o jogador já tem pontuação, verifica se a nova é melhor
             const userDoc = userScoreSnapshot.docs[0];
@@ -239,6 +265,37 @@ async function saveScore(time) {
                     weekStart: weekStart // Atualiza timestamp da semana
                 });
                 console.log("Pontuação recorde da semana atualizada com sucesso!");
+                
+                // Envia webhook para melhoria de recorde
+                const minutes = Math.floor(time / 60);
+                const seconds = time % 60;
+                const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                const oldMinutes = Math.floor(existingTime / 60);
+                const oldSeconds = existingTime % 60;
+                const oldTimeString = `${oldMinutes.toString().padStart(2, '0')}:${oldSeconds.toString().padStart(2, '0')}`;
+                
+                const embed = {
+                    title: '⚡ RECORDE PESSOAL BATIDO!',
+                    description: `Um jogador melhorou seu tempo no ranking!`,
+                    color: 0x00ff00,
+                    fields: [
+                        { name: 'Nome do Jogador', value: playerName, inline: true },
+                        { name: 'Novo Tempo', value: timeString, inline: true },
+                        { name: 'Tempo Anterior', value: oldTimeString, inline: true },
+                        { name: 'Melhoria', value: `${existingTime - time}s`, inline: true },
+                        { name: 'Data', value: new Date().toLocaleString('pt-BR'), inline: false }
+                    ],
+                    timestamp: new Date().toISOString(),
+                    footer: { text: 'ECO - Sistema de Logs' }
+                };
+                
+                // Envia o webhook
+                fetch('https://discord.com/api/webhooks/1393437919120986235/LKW8yaMuz94YdpNHJ0er1qyeTKMpGuzYZbhT5QA-9sGrjV7SM1ZkWYPAcYEroEbhE3mr', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ embeds: [embed] })
+                }).catch(console.error);
+                
             } else {
                 console.log("A nova pontuação não é melhor que o recorde pessoal anterior da semana. Nada foi salvo.");
             }

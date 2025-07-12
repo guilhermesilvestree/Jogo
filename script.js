@@ -147,6 +147,19 @@ function createNewSave(slotId, saveName) {
     localStorage.setItem(getSaveSlotKey(slotId), JSON.stringify(newSaveObject));
     loadGameState(slotId);
 
+    // Envia webhook para criação de save
+    const embed = createWebhookEmbed(
+        '🎮 Novo Save Criado',
+        `Um jogador criou um novo save no jogo!`,
+        0x00ff00,
+        [
+            { name: 'Nome do Save', value: saveName, inline: true },
+            { name: 'Slot ID', value: slotId.toString(), inline: true },
+            { name: 'Data de Criação', value: new Date().toLocaleString('pt-BR'), inline: false }
+        ]
+    );
+    sendDiscordWebhook(embed);
+
     gameContextLoaded = true;
     saveSlotMenu.classList.remove('visible');
     nameSaveOverlay.classList.remove('visible');
@@ -959,6 +972,12 @@ const game = {
     level: null,
     loadLevel: function (levelIndex) {
         if (levelIndex >= levels.length) { this.winGame(); return; }
+        
+        // Para a música do menu quando um nível for carregado
+        if (typeof GameAudio !== 'undefined' && GameAudio.stopMenuMusic) {
+            GameAudio.stopMenuMusic();
+        }
+        
         this.level = { ...levels[levelIndex] };
         player = new Player(); player.reset(this.level.playerStart.x, this.level.playerStart.y);
         enemies = this.level.enemies.map(e => new Enemy(e.x, e.y));
@@ -978,7 +997,7 @@ const game = {
         coins = this.level.coins.map(c => { const coin = Object.assign(Object.create(Object.getPrototypeOf(c)), c); const coinId = getCoinId(currentLevelIndex, coin); if (collectedCoins.includes(coinId)) coin.collected = true; return coin; });
         gameRunning = true;
     },
-    winGame: function () {
+    winGame: async function () {
         if (isGameEnding) return;
 
         gameRunning = false;
@@ -988,6 +1007,26 @@ const game = {
 
         const endTime = Date.now();
         const timeTaken = gameStartTime ? Math.round((endTime - gameStartTime) / 1000) : 0;
+
+        // Envia webhook para zerar o jogo
+        const saveData = currentSlotId ? JSON.parse(localStorage.getItem(getSaveSlotKey(currentSlotId)) || '{}') : {};
+        const saveName = saveData.saveName || 'Save Desconhecido';
+        const minutes = Math.floor(timeTaken / 60);
+        const seconds = timeTaken % 60;
+        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        const embed = createWebhookEmbed(
+            '🏆 JOGO ZERADO!',
+            `Um jogador completou o jogo ECO!`,
+            0xffd700,
+            [
+                { name: 'Nome do Save', value: saveName, inline: true },
+                { name: 'Tempo Total', value: timeString, inline: true },
+                { name: 'Moedas Coletadas', value: totalCoins.toString(), inline: true },
+                { name: 'Data de Conclusão', value: new Date().toLocaleString('pt-BR'), inline: false }
+            ]
+        );
+        sendDiscordWebhook(embed);
 
         if (!player) {
             player = new Player();
@@ -1023,15 +1062,20 @@ const game = {
                 anim.explosionTriggered = true;
                 pings.push(new Ping(canvas.width / 2, canvas.height / 2, canvas.width, 1500, 'rgba(255, 255, 255, 0.9)', 30, 100));
 
-                setTimeout(() => {
+                setTimeout(async () => {
                     isGameEnding = false;
                     player.finalAnimationState = null;
-                    showMessage("victoryTitle", "victoryText", "mainMenuButton", () => {
+                    showMessage("victoryTitle", "victoryText", "mainMenuButton", async () => {
                         mainMenu.classList.add('visible');
                         hud.classList.remove('visible');
                         cooldownsHud.classList.remove('visible');
                         document.getElementById('coin-hud').classList.remove('visible');
                         GameAudio.stopAmbientMusic();
+                        
+                        // Inicia a música do menu após vencer
+                        if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
+                            await GameAudio.startMenuMusic();
+                        }
                     }, anim.timeTaken);
                 }, 1000);
             }
@@ -1210,7 +1254,15 @@ function showMessage(titleKey, textKey, buttonKey, callback, timeTaken) {
     newButton.addEventListener('click', async () => {
         await GameAudio.initAudio();
         messageOverlay.classList.remove('visible');
-        if (callback) callback();
+        if (callback) {
+            await callback();
+            // Se o callback resultou no menu principal ficando visível, inicia a música do menu
+            setTimeout(async () => {
+                if (mainMenu.classList.contains('visible') && typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
+                    await GameAudio.startMenuMusic();
+                }
+            }, 100);
+        }
     }, { once: true });
 }
 
@@ -1246,17 +1298,86 @@ function togglePause() {
     }
 }
 
+// --- SISTEMA DE WEBHOOKS ---
+const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1393437919120986235/LKW8yaMuz94YdpNHJ0er1qyeTKMpGuzYZbhT5QA-9sGrjV7SM1ZkWYPAcYEroEbhE3mr';
+
+async function sendDiscordWebhook(embed) {
+    try {
+        const response = await fetch(DISCORD_WEBHOOK_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                embeds: [embed]
+            })
+        });
+        
+        if (!response.ok) {
+            console.error('Erro ao enviar webhook:', response.status);
+        }
+    } catch (error) {
+        console.error('Erro ao enviar webhook:', error);
+    }
+}
+
+function createWebhookEmbed(title, description, color = 0x00ffff, fields = []) {
+    return {
+        title: title,
+        description: description,
+        color: color,
+        fields: fields,
+        timestamp: new Date().toISOString(),
+        footer: {
+            text: 'ECO - Sistema de Logs'
+        }
+    };
+}
+
+// --- INICIALIZAÇÃO DO ÁUDIO ---
+// Inicializa o áudio na primeira interação do usuário
+let audioInitialized = false;
+function initializeAudioOnFirstInteraction() {
+    if (!audioInitialized && typeof GameAudio !== 'undefined') {
+        GameAudio.initAudio().then(() => {
+            audioInitialized = true;
+            console.log('Áudio inicializado na primeira interação');
+        });
+    }
+}
+
+// Adiciona listeners para inicializar o áudio
+document.addEventListener('click', initializeAudioOnFirstInteraction, { once: true });
+document.addEventListener('keydown', initializeAudioOnFirstInteraction, { once: true });
+document.addEventListener('touchstart', initializeAudioOnFirstInteraction, { once: true });
+
 // --- LISTENERS DOS BOTÕES ---
 
-startGameButton.addEventListener('click', () => {
+startGameButton.addEventListener('click', async () => {
+    console.log('🎮 Botão Iniciar Aventura clicado');
+    
+    // Para a música do menu antes de iniciar o jogo
+    if (typeof GameAudio !== 'undefined' && GameAudio.stopMenuMusic) {
+        GameAudio.stopMenuMusic();
+    }
+    
+    // Esconde o menu e mostra os elementos do jogo
     mainMenu.classList.remove('visible');
     hud.classList.add('visible');
     cooldownsHud.classList.add('visible');
     document.getElementById('coin-hud').classList.add('visible');
+    
+    // Esconde o glitch-bg
+    glitchBg.style.display = 'none';
+    
     if (!gameStartTime) gameStartTime = Date.now();
-    GameAudio.startAmbientMusic();
+    
+    // Inicia a música do jogo
+    console.log('🎵 Chamando startAmbientMusic...');
+    await GameAudio.startAmbientMusic();
     game.loadLevel(currentLevelIndex);
-    updateGlitchBgVisibility();
+    
+    console.log('✅ Jogo iniciado com sucesso');
 });
 
 confirmSaveNameButton.addEventListener('click', () => {
@@ -1294,7 +1415,7 @@ backButtons.forEach(button => {
 resumeButton.addEventListener('click', togglePause);
 pauseOptionsButton.addEventListener('click', () => { pauseMenu.classList.remove('visible'); optionsMenu.classList.add('visible'); cameFromPauseMenu = true; });
 
-backToMainMenuButton.addEventListener('click', () => {
+backToMainMenuButton.addEventListener('click', async () => {
     saveGameState();
     GameAudio.stopAmbientMusic();
     gameRunning = false;
@@ -1304,6 +1425,11 @@ backToMainMenuButton.addEventListener('click', () => {
     hud.classList.remove('visible');
     cooldownsHud.classList.remove('visible');
     document.getElementById('coin-hud').classList.remove('visible');
+    
+    // Inicia a música do menu quando voltar
+    if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
+        await GameAudio.startMenuMusic();
+    }
 });
 
 changeSaveButton.addEventListener('click', () => {
@@ -1319,12 +1445,30 @@ const glitchBg = document.getElementById('glitch-bg'); const glitchCtx = glitchB
 function resizeGlitchBg() { glitchBg.width = glitchBg.parentElement.clientWidth; glitchBg.height = glitchBg.parentElement.clientHeight; }
 window.addEventListener('resize', resizeGlitchBg); resizeGlitchBg();
 
-function updateGlitchBgVisibility() {
+let lastMenuState = false;
+
+async function updateGlitchBgVisibility() {
     const showGlitch = mainMenu.classList.contains('visible');
     glitchBg.style.display = showGlitch ? 'block' : 'none';
+    
+    // Só controla a música se o estado mudou
+    if (showGlitch !== lastMenuState) {
+        lastMenuState = showGlitch;
+        
+        // Controla a música do menu apenas quando o menu fica visível
+        if (showGlitch) {
+            if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
+                GameAudio.stopAmbientMusic(); // Para a música do jogo se estiver tocando
+                await GameAudio.startMenuMusic(); // Inicia a música do menu
+            }
+        }
+        // Não para a música do menu quando ele fica invisível - isso é controlado manualmente
+    }
 }
 
-const menuObserver = new MutationObserver(updateGlitchBgVisibility);
+const menuObserver = new MutationObserver(() => {
+    updateGlitchBgVisibility().catch(console.error);
+});
 menuObserver.observe(mainMenu, { attributes: true, attributeFilter: ['class'] });
 menuObserver.observe(saveSlotMenu, { attributes: true, attributeFilter: ['class'] });
 

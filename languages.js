@@ -96,7 +96,7 @@ export const translations = {
 
         // In-Game Messages
         hudLevel: "Fase",
-        levelIntroButton: "✨ Iniciar Fase ✨",
+        levelIntroButton: "Iniciar Fase",
         levelCompleteTitle: "Nível Concluído!",
         levelCompleteText: "A luz ressoa através de você.",
         nextLevelButton: "Próxima Fase",

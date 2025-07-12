@@ -1,19 +1,13 @@
 // =================================================================
-// JOGO: ECO-LOCALIZADOR (Edição Gemini) - SISTEMA DE ÁUDIO
+// JOGO: ECO-LOCALIZADOR (Edição Gemini) - SISTEMA DE ÁUDIO (OTIMIZADO)
 // =================================================================
 
-// Elementos HTML dos sliders de volume
-const masterVolumeSlider = document.getElementById('master-volume-slider');
-const musicVolumeSlider = document.getElementById('music-volume-slider');
-const effectsVolumeSlider = document.getElementById('effects-volume-slider');
-
-// Objeto global para gerenciar todo o áudio do jogo
 const GameAudio = {
     audioReady: false,
     isTense: false,
     originalBpm: 120,
+    isMusicPlaying: false,
 
-    // Definições de sons usando a biblioteca Tone.js
     sounds: {
         shortPing: new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.005, decay: 0.1, sustain: 0.3, release: 0.1 } }).toDestination(),
         longPing: new Tone.FMSynth({ modulationIndex: 10, envelope: { attack: 0.01, decay: 0.2 }, harmonicity: 3 }).toDestination(),
@@ -29,200 +23,196 @@ const GameAudio = {
         pauseOut: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0, release: 0.1 }, volume: -10 }).toDestination()
     },
 
-    // Sintetizadores e efeitos para música ambiente
-    ambianceSynth: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "sawtooth" }, envelope: { attack: 2, decay: 1, sustain: 0.5, release: 3 }, volume: -20 }).toDestination(),
-    lowDrone: new Tone.FMSynth({ harmonicity: 0.5, modulationIndex: 1, envelope: { attack: 5, decay: 0.1, sustain: 1, release: 10 }, modulation: { type: "sine" }, detune: 0, volume: -25 }).toDestination(),
-    // --- NOVOS SONS PARA TENSÃO ---
-    heartbeat: new Tone.MembraneSynth({ pitchDecay: 0.2, octaves: 3, envelope: { attack: 0.001, decay: 0.25, sustain: 0 }, volume: -12 }).toDestination(),
-    alarmSynth: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 }, volume: -18 }).toDestination(),
-    
-    shimmerReverb: new Tone.Reverb(5).toDestination(),
-    delay: new Tone.FeedbackDelay("8n", 0.5).toDestination(),
-    padSynth: null,
-    musicLoop: null,
-    // --- NOVOS LOOPS PARA TENSÃO ---
-    heartbeatLoop: null,
-    alarmLoop: null,
+    musicSynths: {
+        pad: new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 4, decay: 0.1, sustain: 0.8, release: 4 }, volume: -22 }).chain(new Tone.Reverb(6).toDestination()),
+        lowDrone: new Tone.FMSynth({ harmonicity: 0.5, modulationIndex: 1, envelope: { attack: 5, decay: 0.1, sustain: 1, release: 5 }, volume: -28 }).toDestination(),
+        heartbeat: new Tone.MembraneSynth({ pitchDecay: 0.2, octaves: 3, envelope: { attack: 0.001, decay: 0.25, sustain: 0 }, volume: -12 }).toDestination(),
+        alarm: new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.5 }, volume: -20 }).toDestination(),
+        tensionSynth: new Tone.FMSynth({ harmonicity: 1.5, modulationIndex: 5, envelope: { attack: 0.01, decay: 0.1, release: 0.1 }, volume: -25 }).toDestination(),
+        menuMelody: new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 2, decay: 0.5, sustain: 0.7, release: 3 }, volume: -20 }).chain(new Tone.Reverb(8), Tone.Destination),
+        menuPad: new Tone.PolySynth(Tone.Synth, { oscillator: { type: "triangle" }, envelope: { attack: 4, decay: 1, sustain: 0.8, release: 4 }, volume: -25, maxPolyphony: 2 }).chain(new Tone.Reverb(10), Tone.Destination),
+    },
 
-    /**
-     * Inicia a reprodução da música ambiente do jogo.
-     */
-    startAmbientMusic: function () {
-        if (this.musicLoop) return;
-        Tone.Transport.bpm.value = this.originalBpm;
+    ambientPart: null,
+    musicSchedulerLoop: null,
+    tensionPart: null,
+    tensionLoops: { heartbeat: null, alarm: null },
+    menuLoop: null,
 
-        this.musicLoop = new Tone.Loop(time => {
-            this.padSynth.triggerAttackRelease("C3", "16n", time);
-            this.padSynth.triggerAttackRelease("G2", "16n", time + 0.5);
-            this.lowDrone.triggerAttackRelease("C1", "4n", time + Math.random() * 2);
-            if (Math.random() < 0.2) {
-                this.ambianceSynth.triggerAttackRelease(["C3", "Eb3", "G3"], "2n", time + Math.random() * 4);
+    releaseAllSynths: function() {
+        for (const synth of Object.values(this.musicSynths)) {
+            if (synth && typeof synth.releaseAll === 'function') {
+                synth.releaseAll();
             }
-        }, "8n").start(0);
-        Tone.Transport.start();
+        }
     },
 
-    /**
-     * Para a reprodução da música ambiente do jogo.
-     */
-    stopAmbientMusic: function () {
-        if (this.musicLoop) {
-            this.musicLoop.stop();
-            this.musicLoop.dispose();
-            this.musicLoop = null;
-        }
-        if (this.isTense) {
-            this.decreaseTension(0);
-        }
-        Tone.Transport.stop();
+    startAmbientMusic: async function () {
+        if (this.isMusicPlaying && !this.menuLoop) return;
+        await this.initAudio();
+        this.stopAllMusic();
+        this.isMusicPlaying = true;
+    
+        Tone.Transport.bpm.value = this.originalBpm;
+        if (Tone.Transport.state !== 'started') Tone.Transport.start();
+    
+        const patterns = [
+            [["0:0", "C2"], ["0:2", "G2"]],
+            [["0:1", "Eb2"], ["0:3", "Bb2"]],
+            [["0:0", "F2"], ["0:2:2", "C3"]],
+        ];
+    
+        this.ambientPart = new Tone.Part((time, note) => {
+            this.musicSynths.pad.triggerAttackRelease(note, "2n", time);
+        }, patterns[0]).start(0);
+    
+        this.ambientPart.loop = true;
+        this.ambientPart.loopEnd = "1m";
+    
+        this.musicSchedulerLoop = new Tone.Loop(time => {
+            const currentPattern = patterns[Math.floor(Math.random() * patterns.length)];
+            this.ambientPart.clear().set({ value: currentPattern });
+            if (Math.random() < 0.5) {
+                this.musicSynths.lowDrone.triggerAttackRelease("C1", "4m", time);
+            }
+        }, "2m").start(Tone.now());
     },
     
-    /**
-     * Inicia a transição para a música de perseguição.
-     */
+    startMenuMusic: async function () {
+        if (this.isMusicPlaying && this.menuLoop) return;
+        await this.initAudio();
+        this.stopAllMusic();
+        this.isMusicPlaying = true;
+    
+        Tone.Transport.bpm.value = 60;
+        if (Tone.Transport.state !== 'started') Tone.Transport.start();
+    
+        this.menuLoop = new Tone.Loop(time => {
+            const melodyNotes = ["C4", "E4", "G4", "A4", "G4", "E4"];
+            const noteIndex = Math.floor((Tone.Transport.seconds / 2) % melodyNotes.length);
+            this.musicSynths.menuMelody.triggerAttackRelease(melodyNotes[noteIndex], "2n", time);
+    
+            if (Math.random() < 0.3) {
+                this.musicSynths.menuPad.triggerAttackRelease(["C3", "G3"], "1m", time);
+            }
+        }, "1n").start(0);
+    },
+
+    stopAllMusic: function() {
+        if (this.ambientPart) { this.ambientPart.stop(0).dispose(); this.ambientPart = null; }
+        if (this.musicSchedulerLoop) { this.musicSchedulerLoop.stop(0).dispose(); this.musicSchedulerLoop = null; }
+        if (this.menuLoop) { this.menuLoop.stop(0).dispose(); this.menuLoop = null; }
+        if (this.tensionPart) { this.tensionPart.stop(0).dispose(); this.tensionPart = null; }
+        
+        Object.values(this.tensionLoops).forEach((loop, i) => {
+            if (loop) {
+                loop.stop(0).dispose();
+                this.tensionLoops[Object.keys(this.tensionLoops)[i]] = null;
+            }
+        });
+
+        this.releaseAllSynths();
+        this.isMusicPlaying = false;
+        this.isTense = false;
+    },
+
     increaseTension: function(time = 1.0) {
         if (this.isTense) return;
         this.isTense = true;
         
-        // --- EFEITOS DE TENSÃO MAIS AGRESSIVOS ---
-        Tone.Transport.bpm.rampTo(this.originalBpm * 1.6, time); 
-        this.lowDrone.harmonicity.rampTo(3.5, time);
-        this.lowDrone.volume.rampTo(-18, time); // Aumenta o volume do drone
+        // Para a música ambiente para dar lugar à de tensão
+        if (this.ambientPart) this.ambientPart.stop(0);
+        if (this.musicSchedulerLoop) this.musicSchedulerLoop.stop(0);
+        this.releaseAllSynths();
 
-        // Inicia o loop de batimento cardíaco
-        if (!this.heartbeatLoop) {
-            this.heartbeatLoop = new Tone.Loop(loopTime => {
-                this.heartbeat.triggerAttackRelease("C1", "8n", loopTime);
-            }, "4n").start(0);
+        Tone.Transport.bpm.rampTo(this.originalBpm * 1.5, time); 
+
+        // Adiciona os loops de perseguição
+        if (!this.tensionLoops.heartbeat) {
+            this.tensionLoops.heartbeat = new Tone.Loop(loopTime => {
+                this.musicSynths.heartbeat.triggerAttackRelease("C1", "8n", loopTime);
+            }, "4n").start(Tone.now());
         }
-        
-        // Inicia o loop do alarme
-        if (!this.alarmLoop) {
-            this.alarmLoop = new Tone.Loop(loopTime => {
-                if(Math.random() < 0.4) { // Toca esporadicamente
-                    this.alarmSynth.triggerAttackRelease("G#5", "16n", loopTime);
+        if (!this.tensionLoops.alarm) {
+            this.tensionLoops.alarm = new Tone.Loop(loopTime => {
+                if (Math.random() < 0.4) {
+                    this.musicSynths.alarm.triggerAttackRelease("G#5", "16n", loopTime);
                 }
-            }, "2n").start(0);
+            }, "2n").start(Tone.now());
         }
+
+        // Adiciona a nova parte musical de tensão
+        const tensionPattern = [ ["0:0", "C#3"], ["0:1:2", "D3"], ["0:3", "C#3"] ];
+        this.tensionPart = new Tone.Part((time, note) => {
+            this.musicSynths.tensionSynth.triggerAttackRelease(note, "16n", time);
+        }, tensionPattern).start(Tone.now());
+        this.tensionPart.loop = 4; // Toca o padrão algumas vezes e para
+        this.tensionPart.loopEnd = "2n";
     },
 
-    /**
-     * Retorna a música ao estado normal.
-     */
     decreaseTension: function(time = 2.0) {
         if (!this.isTense) return;
         this.isTense = false;
 
-        // Retorna os parâmetros ao normal
-        Tone.Transport.bpm.rampTo(this.originalBpm, time);
-        this.lowDrone.harmonicity.rampTo(0.5, time);
-        this.lowDrone.volume.rampTo(-25, time);
-
-        // Para e remove os loops de tensão
-        if (this.heartbeatLoop) {
-            this.heartbeatLoop.stop();
-            this.heartbeatLoop.dispose();
-            this.heartbeatLoop = null;
-        }
-        if (this.alarmLoop) {
-            this.alarmLoop.stop();
-            this.alarmLoop.dispose();
-            this.alarmLoop = null;
-        }
-    },
-
-    /**
-     * Inicia o contexto de áudio do Tone.js.
-     */
-    initAudio: async function () {
-        if (this.audioReady) return;
-        await Tone.start();
-        this.audioReady = true;
-    },
-
-    /**
-     * Salva as configurações de volume no LocalStorage.
-     */
-    saveVolumeSettings: function () {
-        localStorage.setItem('eco_volume_master', masterVolumeSlider.value);
-        localStorage.setItem('eco_volume_music', musicVolumeSlider.value);
-        localStorage.setItem('eco_volume_effects', effectsVolumeSlider.value);
-    },
-
-    /**
-     * Carrega as configurações de volume do LocalStorage.
-     */
-    loadVolumeSettings: function () {
-        const master = localStorage.getItem('eco_volume_master');
-        const music = localStorage.getItem('eco_volume_music');
-        const effects = localStorage.getItem('eco_volume_effects');
-        if (master !== null) masterVolumeSlider.value = master;
-        if (music !== null) musicVolumeSlider.value = music;
-        if (effects !== null) effectsVolumeSlider.value = effects;
-        
-        // Atualiza o preenchimento visual dos sliders após carregar os valores
-        this.updateSliderFills();
-    },
-
-    /**
-     * Atualiza o preenchimento visual de todos os sliders de volume.
-     */
-    updateSliderFills: function () {
-        const sliders = [masterVolumeSlider, musicVolumeSlider, effectsVolumeSlider];
-        sliders.forEach(slider => {
-            if (slider) {
-                const min = slider.min || 0;
-                const max = slider.max || 100;
-                const value = slider.value;
-                const percent = ((value - min) / (max - min)) * 100;
-                slider.style.setProperty('--fill-percent', `${percent}%`);
+        // Para as partes de tensão
+        if (this.tensionPart) { this.tensionPart.stop(time).dispose(); this.tensionPart = null; }
+        Object.values(this.tensionLoops).forEach((loop, i) => {
+            if (loop) {
+                loop.stop(time);
+                loop.dispose();
+                this.tensionLoops[Object.keys(this.tensionLoops)[i]] = null;
             }
         });
+
+        Tone.Transport.bpm.rampTo(this.originalBpm, time);
+
+        // Agenda o retorno da música ambiente após a transição de BPM
+        Tone.Transport.scheduleOnce(() => {
+            if (!this.isTense) { 
+                this.isMusicPlaying = false; 
+                this.startAmbientMusic();
+            }
+        }, `+${time}`);
     },
 
-    /**
-     * Atualiza os volumes dos sintetizadores e efeitos.
-     */
-    updateVolumes: function () {
-        const masterValue = parseFloat(masterVolumeSlider.value);
-        const masterdB = (masterValue / 100) * 40 - 40;
-        Tone.Master.volume.value = masterdB > -40 ? masterdB : -Infinity;
+    initAudio: async function () {
+        if (this.audioReady) return;
+        try {
+            if (Tone.context.state === 'running') {
+                this.audioReady = true;
+                return;
+            }
+            await Tone.start();
+            this.audioReady = true;
+            console.log('AudioContext iniciado com sucesso');
+        } catch (error) {
+            console.error('Erro ao iniciar AudioContext:', error);
+        }
+    },
 
-        const musicValue = parseFloat(musicVolumeSlider.value);
-        const musicdB = (musicValue / 100) * 40 - 40;
+    updateVolumes: function () {
+        if (!window.ecoGame || !window.ecoGame.gameSettings) return;
+
+        const settings = window.ecoGame.gameSettings;
+        const masterdB = (settings.masterVolume / 100) * 40 - 40;
+        Tone.getDestination().volume.value = masterdB > -40 ? masterdB : -Infinity;
+
+        const musicdB = (settings.musicVolume / 100) * 40 - 40;
         const finalMusicVolume = musicdB > -40 ? musicdB : -Infinity;
         
-        // Aplica o volume a todos os sons da música, incluindo os de tensão
-        this.ambianceSynth.volume.value = finalMusicVolume;
-        this.lowDrone.volume.value = this.isTense ? finalMusicVolume - 7 : finalMusicVolume; // Ajusta o volume do drone
-        this.padSynth.volume.value = finalMusicVolume;
-        this.heartbeat.volume.value = finalMusicVolume + 2; // Batimento cardíaco mais proeminente
-        this.alarmSynth.volume.value = finalMusicVolume - 6; // Alarme um pouco mais baixo para não irritar
+        for (const synth of Object.values(this.musicSynths)) {
+            if (synth?.volume) {
+                 synth.volume.value = finalMusicVolume;
+            }
+        }
 
-        const effectsValue = parseFloat(effectsVolumeSlider.value);
-        const effectsdB = (effectsValue / 100) * 40 - 40;
+        const effectsdB = (settings.effectsVolume / 100) * 40 - 40;
         const finalEffectsVolume = effectsdB > -40 ? effectsdB : -Infinity;
 
-        Object.values(this.sounds).forEach(sound => {
-            if (sound.volume) sound.volume.value = finalEffectsVolume;
-        });
+        for (const sound of Object.values(this.sounds)) {
+            if (sound?.volume) {
+                sound.volume.value = finalEffectsVolume;
+            }
+        }
     }
 };
-
-GameAudio.padSynth = new Tone.Synth({ oscillator: { type: "sine" }, envelope: { attack: 4, decay: 0, sustain: 1, release: 8 }, volume: -30 }).chain(GameAudio.delay, GameAudio.shimmerReverb, Tone.Destination);
-
-if (masterVolumeSlider) masterVolumeSlider.addEventListener('input', () => { 
-    GameAudio.updateVolumes(); 
-    GameAudio.saveVolumeSettings(); 
-    GameAudio.updateSliderFills();
-});
-if (musicVolumeSlider) musicVolumeSlider.addEventListener('input', () => { 
-    GameAudio.updateVolumes(); 
-    GameAudio.saveVolumeSettings(); 
-    GameAudio.updateSliderFills();
-});
-if (effectsVolumeSlider) effectsVolumeSlider.addEventListener('input', () => { 
-    GameAudio.updateVolumes(); 
-    GameAudio.saveVolumeSettings(); 
-    GameAudio.updateSliderFills();
-});
