@@ -412,6 +412,12 @@ enemySprite.src = 'assets/inimigo1.png';
 let enemySpriteLoaded = false;
 enemySprite.onload = () => { enemySpriteLoaded = true; };
 
+// Adicionando o segundo sprite do inimigo
+const enemySprite2 = new window.Image();
+enemySprite2.src = 'assets/inimigo2.png';
+let enemySprite2Loaded = false;
+enemySprite2.onload = () => { enemySprite2Loaded = true; };
+
 const deathSprites = [];
 const deathSpriteUrls = [
     'assets/morte/ecoskin-morte1.png',
@@ -433,6 +439,43 @@ setTimeout(() => {
     if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); } 
     if (!enemySpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo.'); } 
 }, 2000);
+
+class DeathParticle {
+    constructor(x, y, color) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1; // Maior velocidade para um efeito mais explosivo
+        this.x = x;
+        this.y = y;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed - 2; // Impulso inicial para cima
+        this.lifespan = 80 + Math.random() * 50;
+        this.life = this.lifespan;
+        this.size = Math.random() * 3 + 2;
+        this.gravity = 0.1;
+        this.alpha = 1;
+        this.color = color;
+    }
+
+    update() {
+        this.vy += this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life--;
+        this.alpha = this.life / this.lifespan;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 5;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
 
 class Player {
     constructor() {
@@ -465,11 +508,10 @@ class Player {
     }
     draw() {
         if (this.finalAnimationState) { this.drawWinAnimation(); return; }
-        if (this.deathState) {
-            this.drawDeathAnimation();
-            if (this.deathState.finished) return;
-            return;
-        }
+        // A lógica de desenho da morte foi movida para drawDeathAnimation
+        // para ser chamada separadamente no loop de animação.
+        if (this.deathState) return;
+
 
         this.breathOffset = Math.sin(Date.now() / 400) * 0.5;
         const alpha = (Date.now() < this.revealTime) ? 1 : 0.6;
@@ -575,52 +617,79 @@ class Player {
         }
     }
 
-    startDeathAnimation() {
+    startDeathAnimation(killerType = 'enemy') {
+        if (this.deathState) return;
+    
+        const particleColor = killerType === 'acid' ? 'rgba(100, 255, 100, 1)' : 'rgba(255, 215, 0, 1)';
+    
         this.deathState = {
             startTime: Date.now(),
-            frameDuration: 100,
-            currentFrame: 0,
-            totalFrames: 4,
-            startY: this.position.y,
-            finished: false
+            duration: 1500,
+            particles: [],
+            hasShattered: false,
+            shatterTime: 100,
+            killerType: killerType,
+            shakeIntensity: 5,
+            shakeDuration: 500
         };
-    }
-
-    drawDeathAnimation() {
-        if (!this.deathState || deathSpritesLoaded < 4) return;
-
-        const elapsed = Date.now() - this.deathState.startTime;
-        const totalDuration = this.deathState.frameDuration * this.deathState.totalFrames;
-
-        if (elapsed >= totalDuration) {
-            this.deathState.finished = true;
-            return;
+    
+        for (let i = 0; i < 50; i++) {
+            this.deathState.particles.push(new DeathParticle(
+                this.position.x + this.width / 2,
+                this.position.y + this.height / 2,
+                particleColor
+            ));
         }
-
-        const frameIndex = Math.min(Math.floor(elapsed / this.deathState.frameDuration), this.deathState.totalFrames - 1);
-
-        const progress = Math.min(elapsed / totalDuration, 1);
-        const riseDistance = 30;
-        this.position.y = this.deathState.startY - (riseDistance * progress);
-
-        const sprite = deathSprites[frameIndex];
-        if (!sprite) return;
-
-        ctx.save();
-        ctx.globalAlpha = 0.3;
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
-
-        ctx.save();
-        ctx.globalAlpha = 1.0;
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = 'rgba(255, 0, 0, 0.5)';
-        ctx.drawImage(sprite, 0, 0, sprite.width, sprite.height, this.position.x, this.position.y, this.width, this.height);
-        ctx.restore();
+    
+        GameAudio.sounds.gameOver.triggerAttackRelease("C1", "1.5s");
+        if (GameAudio.sounds.shatter) {
+             GameAudio.sounds.shatter.triggerAttackRelease("C5", "0.8s");
+        }
+    }
+    
+    drawDeathAnimation(ctx) {
+        if (!this.deathState) return;
+    
+        const elapsed = Date.now() - this.deathState.startTime;
+        const progress = Math.min(elapsed / this.deathState.duration, 1);
+    
+        if (elapsed < this.deathState.shakeDuration) {
+            const shakeFactor = 1 - (elapsed / this.deathState.shakeDuration);
+            const shakeX = (Math.random() - 0.5) * this.deathState.shakeIntensity * shakeFactor;
+            const shakeY = (Math.random() - 0.5) * this.deathState.shakeIntensity * shakeFactor;
+            ctx.translate(shakeX, shakeY);
+        }
+    
+        const vignetteOpacity = Math.min(0.9, progress * 1.2);
+        const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width * 0.3, canvas.width / 2, canvas.height / 2, canvas.width);
+        gradient.addColorStop(0, 'rgba(0,0,0,0)');
+        gradient.addColorStop(1, `rgba(0,0,0,${vignetteOpacity})`);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2); // fill entire screen despite shake
+        
+        ctx.globalCompositeOperation = 'saturation';
+        ctx.fillStyle = `hsl(0, 0%, ${100 - (progress * 100)}%)`;
+        ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2);
+        ctx.globalCompositeOperation = 'source-over';
+    
+        if (elapsed > this.deathState.shatterTime) {
+            this.deathState.hasShattered = true;
+        }
+    
+        if (this.deathState.hasShattered) {
+            this.deathState.particles.forEach(p => {
+                p.update();
+                p.draw(ctx);
+            });
+        } else {
+           this.draw(); // Draw the player normally before shattering
+        }
     }
 
-    resetDeathState() { this.deathState = null; }
+    resetDeathState() { 
+        this.deathState = null; 
+    }
+
     update(platforms, waterRects) { this.handleMovement(waterRects); this.applyGravity(); this.checkCollisions(platforms, waterRects); this.lastY = this.position.y; }
     handleMovement(waterRects) {
         this.velocity.x = 0;
@@ -692,6 +761,10 @@ class Enemy {
         this.facing = 'right';
         this.chaseStartTime = null;
         this.chaseDuration = 5000;
+        // Controle de animação
+        this.animationFrame = 0;
+        this.lastFrameChange = Date.now();
+        this.frameInterval = 300; // ms
     }
 
     reset() {
@@ -718,14 +791,18 @@ class Enemy {
             ctx.fillStyle = 'rgba(255, 0, 0, 0.08)';
             ctx.fill();
             
-            if (enemySpriteLoaded) {
+            // Seleciona o sprite de acordo com o frame da animação
+            let spriteToDraw = enemySprite;
+            let spriteLoaded = enemySpriteLoaded;
+            if (this.animationFrame === 1 && enemySprite2Loaded) {
+                spriteToDraw = enemySprite2;
+                spriteLoaded = enemySprite2Loaded;
+            }
+            if (spriteLoaded) {
                 ctx.globalAlpha = 0.9;
-                
-                const spriteAspectRatio = enemySprite.width / enemySprite.height;
+                const spriteAspectRatio = spriteToDraw.width / spriteToDraw.height;
                 const enemyAspectRatio = this.width / this.height;
-                
                 let drawWidth, drawHeight, drawX, drawY;
-                
                 if (spriteAspectRatio > enemyAspectRatio) {
                     drawHeight = this.height;
                     drawWidth = this.height * spriteAspectRatio;
@@ -737,13 +814,11 @@ class Enemy {
                     drawX = this.position.x;
                     drawY = this.position.y - (drawHeight - this.height) / 2;
                 }
-                
                 const flip = this.facing === 'left';
-                
                 if (flip) {
                     ctx.drawImage(
-                        enemySprite,
-                        0, 0, enemySprite.width, enemySprite.height,
+                        spriteToDraw,
+                        0, 0, spriteToDraw.width, spriteToDraw.height,
                         drawX, drawY, drawWidth, drawHeight
                     );
                 } else {
@@ -751,8 +826,8 @@ class Enemy {
                     ctx.translate(drawX + drawWidth, 0);
                     ctx.scale(-1, 1);
                     ctx.drawImage(
-                        enemySprite,
-                        0, 0, enemySprite.width, enemySprite.height,
+                        spriteToDraw,
+                        0, 0, spriteToDraw.width, spriteToDraw.height,
                         0, drawY, drawWidth, drawHeight
                     );
                     ctx.restore();
@@ -769,7 +844,6 @@ class Enemy {
                 ctx.closePath(); 
                 ctx.fill(); 
             }
-            
             ctx.restore(); 
         
         } 
@@ -780,6 +854,11 @@ class Enemy {
     }
 
     update(player, platforms, noises) {
+        // Atualiza frame da animação
+        if (Date.now() - this.lastFrameChange > this.frameInterval) {
+            this.animationFrame = (this.animationFrame + 1) % 2;
+            this.lastFrameChange = Date.now();
+        }
         this.onGround = false;
         this.velocity.y += GRAVITY;
         this.position.y += this.velocity.y;
@@ -830,18 +909,16 @@ class Enemy {
             }
         }
 
-        if (Date.now() < player.revealTime) {
-            const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
-            if (distanceToPlayer < 200) {
-                if (this.state !== 'chasing') {
-                    this.chaseStartTime = Date.now();
-                    GameAudio.increaseTension();
-                    isChased = true;
-                    if (player) player.isShaking = true;
-                }
-                this.state = 'chasing';
-                this.target = player.position;
+        const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
+        if (distanceToPlayer < 200) {
+            if (this.state !== 'chasing') {
+                this.chaseStartTime = Date.now();
+                GameAudio.increaseTension();
+                isChased = true;
+                if (player) player.isShaking = true;
             }
+            this.state = 'chasing';
+            this.target = player.position;
         }
 
         if (this.state === 'patrol' && this.onGround) {
@@ -1070,7 +1147,7 @@ const game = {
                         hud.classList.remove('visible');
                         cooldownsHud.classList.remove('visible');
                         document.getElementById('coin-hud').classList.remove('visible');
-                        GameAudio.stopAmbientMusic();
+                        GameAudio.stopAllMusic();
                         
                         // Inicia a música do menu após vencer
                         if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
@@ -1107,17 +1184,16 @@ function checkCollisionsAndReveal() {
             for (const enemy of enemies) {
                 if (player.isCollidingWith(enemy) && !player.deathState) {
                     gameRunning = false;
-                    GameAudio.sounds.gameOver.triggerAttackRelease("C1", "1s");
                     GameAudio.decreaseTension(0.1);
                     isChased = false;
                     player.isShaking = false;
-                    player.startDeathAnimation();
+                    player.startDeathAnimation('enemy'); // MODIFICADO
                     setTimeout(() => {
                         showMessage("youWereHeardTitle", "youWereHeardText", "tryAgainButton", () => {
                             player.resetDeathState();
                             game.restartLevel();
                         });
-                    }, 1000);
+                    }, 1500); // MODIFICADO
                     return;
                 }
             }
@@ -1125,17 +1201,16 @@ function checkCollisionsAndReveal() {
         for (const acidPool of game.level.acid) {
             if (player.isCollidingWith(acidPool) && !player.deathState) {
                 gameRunning = false;
-                GameAudio.sounds.gameOver.triggerAttackRelease("C1", "1s");
                 GameAudio.decreaseTension(0.1);
                 isChased = false;
                 player.isShaking = false;
-                player.startDeathAnimation();
+                player.startDeathAnimation('acid'); // MODIFICADO
                 setTimeout(() => {
                     showMessage("corrodedTitle", "corrodedText", "tryAgainButton", () => {
                         player.resetDeathState();
                         game.restartLevel();
                     });
-                }, 1000);
+                }, 1500); // MODIFICADO
                 return;
             }
         }
@@ -1157,41 +1232,75 @@ function isCircleIntersectingRect(circle, rect) { const distX = Math.abs(circle.
 
 function animate() {
     requestAnimationFrame(animate);
+    
+    ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (isGameEnding && player && player.finalAnimationState) {
-        player.draw();
-        return;
-    }
-
-    if (!game.level) return;
-
-    if (window.DEV_MODE_REVEAL_MAP && game.level && game.level.platforms) {
-        game.level.platforms.forEach(p => p.draw(1));
+    if (player && player.deathState) {
+        // A lógica de renderização normal é pausada
+        // Apenas a animação de morte é desenhada.
+        if (game.level) {
+            if (window.DEV_MODE_REVEAL_MAP) {
+                game.level.platforms.forEach(p => p.draw(1));
+            } else {
+                revealedObjects.forEach(ro => ro.draw());
+            }
+            game.level.water.forEach(w => w.draw());
+            game.level.acid.forEach(a => a.draw());
+            heartOfLight.draw();
+            coins.forEach(c => c.draw());
+            enemies.forEach(e => e.draw(player));
+        }
+        player.drawDeathAnimation(ctx);
     } else {
-        revealedObjects = revealedObjects.filter(ro => ro.draw());
-    }
-    game.level.water.forEach(w => w.draw());
-    game.level.acid.forEach(a => a.draw());
-    heartOfLight.draw();
-    coins.forEach(c => c.draw());
+         // Lógica de renderização normal do jogo
+        if (isGameEnding && player && player.finalAnimationState) {
+            player.draw();
+        } else if (game.level) {
+            if (window.DEV_MODE_REVEAL_MAP && game.level && game.level.platforms) {
+                game.level.platforms.forEach(p => p.draw(1));
+            } else {
+                revealedObjects = revealedObjects.filter(ro => ro.draw());
+            }
+            game.level.water.forEach(w => w.draw());
+            game.level.acid.forEach(a => a.draw());
+            heartOfLight.draw();
+            coins.forEach(c => c.draw());
 
-    if (player) {
-        player.draw();
-    }
+            if (player) {
+                player.draw();
+            }
 
-    if (enemies) {
-        enemies.forEach(e => e.draw(player));
-    }
+            if (enemies) {
+                enemies.forEach(e => e.draw(player));
+            }
 
-    if (pings) {
-        pings.forEach(p => p.draw());
-        pings = pings.filter(p => p.active);
+            if (pings) {
+                pings.forEach(p => p.draw());
+            }
+        }
+        if (isChased) {
+            if (chaseVignetteOpacity < 1) chaseVignetteOpacity += 0.05;
+        } else {
+            if (chaseVignetteOpacity > 0) chaseVignetteOpacity -= 0.05;
+        }
+        
+        if (chaseVignetteOpacity > 0) {
+            const pulse = Math.sin(Date.now() / 150) * 0.1 + 0.9;
+            const finalOpacity = chaseVignetteOpacity * pulse;
+            const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width / 3, canvas.width / 2, canvas.height / 2, canvas.width / 1.5);
+            gradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
+            gradient.addColorStop(1, `rgba(200, 0, 0, ${finalOpacity * 0.5})`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
     }
+    
+    ctx.restore();
 
-    if (noises) {
-        noises = noises.filter(n => Date.now() - n.creationTime < 100);
-    }
+    // Lógica de atualização do jogo (não-renderização)
+    if (pings) pings = pings.filter(p => p.active);
+    if (noises) noises = noises.filter(n => Date.now() - n.creationTime < 100);
 
     if (gameRunning && player) {
         player.update(game.level.platforms, game.level.water);
@@ -1200,25 +1309,8 @@ function animate() {
         checkCollisionsAndReveal();
         updateHUD();
     }
-
-    if (isChased) {
-        if (chaseVignetteOpacity < 1) chaseVignetteOpacity += 0.05;
-    } else {
-        if (chaseVignetteOpacity > 0) chaseVignetteOpacity -= 0.05;
-    }
-    
-    if (chaseVignetteOpacity > 0) {
-        const pulse = Math.sin(Date.now() / 150) * 0.1 + 0.9;
-        const finalOpacity = chaseVignetteOpacity * pulse;
-        ctx.save();
-        const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width / 3, canvas.width / 2, canvas.height / 2, canvas.width / 1.5);
-        gradient.addColorStop(0, 'rgba(255, 0, 0, 0)');
-        gradient.addColorStop(1, `rgba(200, 0, 0, ${finalOpacity * 0.5})`);
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.restore();
-    }
 }
+
 
 function updateHUD() {
     if (!game.level) return;
@@ -1288,12 +1380,12 @@ function togglePause() {
         pauseTotalCoins.textContent = totalCoins;
         pauseMenu.classList.add('visible');
         GameAudio.sounds.pauseIn.triggerAttackRelease("C3", "0.1s");
-        GameAudio.stopAmbientMusic();
+        GameAudio.stopAllMusic();
     } else if (pauseMenu.classList.contains('visible')) {
         gameRunning = true;
         pauseMenu.classList.remove('visible');
         GameAudio.sounds.pauseOut.triggerAttackRelease("G3", "0.1s");
-        GameAudio.startAmbientMusic();
+        GameAudio.startAllMusic();
         if (document.activeElement) document.activeElement.blur();
     }
 }
@@ -1417,7 +1509,7 @@ pauseOptionsButton.addEventListener('click', () => { pauseMenu.classList.remove(
 
 backToMainMenuButton.addEventListener('click', async () => {
     saveGameState();
-    GameAudio.stopAmbientMusic();
+    GameAudio.stopAllMusic();
     gameRunning = false;
     game.level = null;
     pauseMenu.classList.remove('visible');
@@ -1458,7 +1550,7 @@ async function updateGlitchBgVisibility() {
         // Controla a música do menu apenas quando o menu fica visível
         if (showGlitch) {
             if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
-                GameAudio.stopAmbientMusic(); // Para a música do jogo se estiver tocando
+                GameAudio.stopAllMusic(); // Para a música do jogo se estiver tocando
                 await GameAudio.startMenuMusic(); // Inicia a música do menu
             }
         }
