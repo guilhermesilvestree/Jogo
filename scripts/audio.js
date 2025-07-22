@@ -48,7 +48,7 @@ const GameAudio = {
     },
 
     startAmbientMusic: async function () {
-        if (this.isMusicPlaying && !this.menuLoop) return;
+        if (this.isMusicPlaying && !this.menuLoop && !this.isTense) return;
         await this.initAudio();
         this.stopAllMusic();
         this.isMusicPlaying = true;
@@ -64,8 +64,8 @@ const GameAudio = {
     
         this.ambientPart = new Tone.Part((time, note) => {
             this.musicSynths.pad.triggerAttackRelease(note, "2n", time);
-        }, patterns[0]).start(0);
-    
+        }, patterns[0]).start(0); // Inicia no tempo 0 do loop
+
         this.ambientPart.loop = true;
         this.ambientPart.loopEnd = "1m";
     
@@ -99,7 +99,6 @@ const GameAudio = {
     },
 
     startAllMusic: async function() {
-        // Se estava no menu, reinicia a música do menu; senão, reinicia a música ambiente
         if (this.menuLoop) {
             await this.startMenuMusic();
         } else {
@@ -108,7 +107,6 @@ const GameAudio = {
     },
 
     stopAllMusic: function() {
-        Tone.Transport.cancel(); // Limpa todos os eventos agendados
         if (this.ambientPart) { this.ambientPart.stop(0).dispose(); this.ambientPart = null; }
         if (this.musicSchedulerLoop) { this.musicSchedulerLoop.stop(0).dispose(); this.musicSchedulerLoop = null; }
         if (this.menuLoop) { this.menuLoop.stop(0).dispose(); this.menuLoop = null; }
@@ -130,7 +128,7 @@ const GameAudio = {
         if (this.isTense) return;
         this.isTense = true;
         
-        // Para a música ambiente imediatamente
+        // Para a música ambiente IMEDIATAMENTE
         if (this.ambientPart) {
             this.ambientPart.stop(0).dispose();
             this.ambientPart = null;
@@ -143,19 +141,26 @@ const GameAudio = {
 
         // Altera o BPM instantaneamente
         Tone.Transport.bpm.value = this.originalBpm * 1.5;
+        if (Tone.Transport.state !== 'started') Tone.Transport.start();
+
 
         // Inicia os sons de perseguição
         if (!this.tensionLoops.heartbeat) {
             this.tensionLoops.heartbeat = new Tone.Loop(loopTime => {
                 this.musicSynths.heartbeat.triggerAttackRelease("C1", "8n", loopTime);
-            }, "4n").start(Tone.now());
+            }, "4n").start(0); // Modificado para start(0) - Inicia no começo do próximo loop
+        } else {
+            this.tensionLoops.heartbeat.start(0); // Garante que, se já existia, inicie do 0
         }
+        
         if (!this.tensionLoops.alarm) {
             this.tensionLoops.alarm = new Tone.Loop(loopTime => {
                 if (Math.random() < 0.4) {
                     this.musicSynths.alarm.triggerAttackRelease("G#5", "16n", loopTime);
                 }
-            }, "2n").start(Tone.now());
+            }, "2n").start(0); // Modificado para start(0) - Inicia no começo do próximo loop
+        } else {
+            this.tensionLoops.alarm.start(0); // Garante que, se já existia, inicie do 0
         }
 
         // Inicia a melodia de tensão
@@ -163,11 +168,11 @@ const GameAudio = {
         if (!this.tensionPart) {
             this.tensionPart = new Tone.Part((time, note) => {
                 this.musicSynths.tensionSynth.triggerAttackRelease(note, "16n", time);
-            }, tensionPattern).start(Tone.now());
+            }, tensionPattern).start(0); // Modificado para start(0) - Inicia no começo do próximo loop
             this.tensionPart.loop = true;
-            this.tensionPart.loopEnd = "2n";
+            this.tensionPart.loopEnd = "2n"; // Certifique-se que o loopEnd está correto para o padrão
         } else {
-            this.tensionPart.start(Tone.now());
+            this.tensionPart.start(0); // Garante que, se já existia, inicie do 0
         }
     },
 
@@ -175,38 +180,25 @@ const GameAudio = {
         if (!this.isTense) return;
         this.isTense = false;
 
-        const fadeOutTime = 0.1; // Um fade-out muito rápido para evitar cliques
-
-        // Para as partes de tensão
+        // Para as partes de tensão IMEDIATAMENTE
         if (this.tensionPart) { 
-            this.tensionPart.stop(Tone.now() + fadeOutTime);
+            this.tensionPart.stop(0).dispose();
+            this.tensionPart = null; 
         }
-        Object.values(this.tensionLoops).forEach((loop) => {
+        Object.values(this.tensionLoops).forEach((loop, i) => {
             if (loop) {
-                loop.stop(Tone.now() + fadeOutTime);
+                loop.stop(0).dispose();
+                this.tensionLoops[Object.keys(this.tensionLoops)[i]] = null;
             }
         });
+        
+        this.releaseAllSynths();
 
         // Retorna o BPM ao normal instantaneamente
         Tone.Transport.bpm.value = this.originalBpm;
 
-        // Agenda o retorno da música ambiente logo após o fade-out da tensão
-        Tone.Transport.scheduleOnce(() => {
-            // Limpa completamente os recursos de tensão
-            if (this.tensionPart) { this.tensionPart.dispose(); this.tensionPart = null; }
-            Object.keys(this.tensionLoops).forEach(key => {
-                if (this.tensionLoops[key]) {
-                    this.tensionLoops[key].dispose();
-                    this.tensionLoops[key] = null;
-                }
-            });
-
-            // Reinicia a música ambiente somente se o estado de tensão não foi reativado
-            if (!this.isTense) { 
-                this.isMusicPlaying = false; 
-                this.startAmbientMusic();
-            }
-        }, Tone.now() + fadeOutTime);
+        this.isMusicPlaying = false;
+        this.startAmbientMusic();
     },
 
     initAudio: async function () {

@@ -220,5 +220,115 @@ export const translations = {
         victoryTime: "Time:",
         mainMenuButton: "Main Menu",
         levelIntroInstructions: "Use [A/D] or Arrow Keys, [Space] to jump. [Q] is a short echo, [E] is a long echo. Press [ESC] to pause."
+    },
+        'es': {
+        // Main Menu
+        gameTitle: "Eco",
+        gameSubtitle: "La oscuridad escucha cada uno de tus pasos.",
+        mainMenuStart: "Iniciar Aventura",
+        mainMenuShop: "Almacenar",
+        mainMenuRanking: "Categoría",
+        mainMenuChangeSave: "Cambiar Guardar",
+        mainMenuOptions: "opciones",
+        mainMenuCredits: "Créditos",
+        activeSave: "Juego activo: ", // Dynamic part will be appended
+
+        // Overlays & Buttons
+        buttonBack: "Volver",
+        buttonConfirm: "Confirmar",
+        
+        // Pause Menu
+        pauseStatus: "STATUS",
+        pauseLocation: "Ubicación:",
+        pauseTime: "Tiempo de juego:",
+        pauseFragments: "Fragmentos (Monedas):",
+        pauseResume: "Continuar juego",
+        pauseOptions: "Opciones",
+        pauseMainMenu: "Menú principal",
+
+        // Options Menu
+        optionsTitle: "Opciones",
+        volumeGeneral: "Volumen general",
+        volumeMusic: "Música",
+        volumeEffects: "Efectos sonoros",
+        languageLabel: "Idioma",
+
+        // Credits Menu
+        creditsTitle: "Créditos",
+        creditsProgramming: "Programación",
+        creditsProgrammingNames: "Guilherme & Enzo",
+        creditsStory: "Historia & soporte",
+        creditsStoryNames: "Gaby & Yuri",
+        creditsIllustration: "Ilustración",
+        creditsIllustrationNames: "Alexandre de Souza",
+        creditsTech: "Tecnologías",
+        creditsTechNames: "HTML, CSS, JavaScript, Tone.js",
+        creditsProduction: "una producción de",
+
+        // Shop
+        shopTitle: "Tienda de actualización",
+        shopCoins: "Monedas: ",
+        shopBuyButton: "Comprar",
+        shopMaxButton: "Máximo",
+        upgradeSpeedName: 'Velocidad +1',
+        upgradeSpeedDesc: 'Aumenta la velocidad del personaje.',
+        upgradeJumpName: 'Saltar +2',
+        upgradeJumpDesc: 'Aumenta la fuerza del salto.',
+        upgradeShortPingName: 'Eco corto rápido',
+        upgradeShortPingDesc: 'Reduce el tiempo de reutilización de Q.',
+        upgradeLongPingName: 'Eco largo rápido',
+        upgradeLongPingDesc: 'Reduce el tiempo de reutilización de la E.',
+        upgradeHealthName: 'vida extra',
+        upgradeHealthDesc: 'Aumenta la resistencia al daño.',
+        upgradeStealthName: 'Sigilo',
+        upgradeStealthDesc: 'Reduce el rango de detección del enemigo.',
+        upgradeVisionName: 'Visión mejorada',
+        upgradeVisionDesc: 'Aumenta el rango de ecos.',
+        upgradeLuckName: 'Suerte',
+        upgradeLuckDesc: 'Aumenta la posibilidad de encontrar monedas.',
+        shopNoSave: "No hay juego cargado. Selecciona una partida guardada para acceder a la tienda.",
+
+        // Save Slots
+        saveSelectGame: "Seleccionar juego",
+        saveNameGame: "Juego de nombres",
+        saveNamePrompt: "Elige un nombre para tu nuevo juego (máximo 15 caracteres).",
+        saveNamePlaceholder: "Guardar nombre",
+        saveSlotEmpty: "Vacío",
+        saveSlotLoad: "para cargar",
+        saveSlotNewGame: "Nuevo juego",
+        saveSlotDelete: "apagar",
+        deleteSaveConfirm: "¿Seguro que quieres eliminar este archivo guardado? Esta acción no se puede deshacer.",
+        premiumUnlockAlert: "¡Tienes que terminar el juego al menos una vez para desbloquear partidas guardadas Premium!",
+        saveNameAlert: "Introduzca un nombre para guardar.",
+
+        // Leaderboard
+        leaderboardTitle: "Ecos de la oscuridad",
+        leaderboardWeekly: "Clasificación Semanal",
+        leaderboardNextReset: "Próximo reinicio:",
+        leaderboardResetDay: "Se reinicia todos los lunes",
+        leaderboardLoading: "Sintonizando con ecos del pasado...",
+        leaderboardShowMore: "Ver más",
+
+        // Player Name Prompt
+        promptNameTitle: "¿Quién eres?",
+        promptNameSubtitle: "Tu nombre resonará en la oscuridad. (máx. 10 caracteres)",
+        playerNamePlaceholder: "Introduce tu nombre...",
+
+        // In-Game Messages
+        hudLevel: "Fase",
+        levelIntroButton: "Iniciar la fase",
+        levelCompleteTitle: "¡Nivel completado!",
+        levelCompleteText: "La luz resuena a través de ti.",
+        nextLevelButton: "Próxima fase",
+        youWereHeardTitle: "fuiste escuchado",
+        youWereHeardText: "El silencio era su única defensa.",
+        tryAgainButton: "Intentar otra vez",
+        corrodedTitle: "Corroído",
+        corrodedText: "La oscuridad líquida te consume.",
+        victoryTitle: "¡Victoria!",
+        victoryText: "¡Escapaste!", // Dynamic time will be appended
+        victoryTime: "Tiempo:",
+        mainMenuButton: "Menú principal",
+        levelIntroInstructions: "Usa [A/D] o las flechas, [Espacio] para saltar. [Q] es un eco corto, [E] es un eco largo. Pulsa [ESC] para pausar."
     }
 };

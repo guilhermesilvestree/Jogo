@@ -52,15 +52,15 @@ function applyTranslations() {
         pauseTimePlayed.textContent = formatTime(gameStartTime ? Date.now() - gameStartTime : 0);
         pauseTotalCoins.textContent = totalCoins;
     }
-    
+
     updateCurrentSaveIndicator();
     updateHUD();
-    
+
     const newSaveInput = document.getElementById('new-save-name-input');
-    if(newSaveInput) newSaveInput.placeholder = translations[currentLanguage].saveNamePlaceholder;
-    
+    if (newSaveInput) newSaveInput.placeholder = translations[currentLanguage].saveNamePlaceholder;
+
     const playerNameInput = document.getElementById('player-name-input');
-    if(playerNameInput) playerNameInput.placeholder = translations[currentLanguage].playerNamePlaceholder;
+    if (playerNameInput) playerNameInput.placeholder = translations[currentLanguage].playerNamePlaceholder;
 }
 
 function setLanguage(lang) {
@@ -68,7 +68,7 @@ function setLanguage(lang) {
     gameSettings.language = lang;
     currentLanguage = lang;
     saveSettings();
-    
+
     const selectedDiv = document.getElementById('custom-select-trigger');
     const options = document.querySelectorAll('#custom-select-items div');
     options.forEach(option => {
@@ -203,7 +203,7 @@ function saveGameState() {
         collectedCoins: collectedCoins,
         gameStartTime: gameStartTime
     };
-    
+
     localStorage.setItem(getSaveSlotKey(currentSlotId), JSON.stringify(saveDataObject));
 }
 
@@ -218,9 +218,9 @@ function deleteSaveSlot(slotId) {
 function updateCurrentSaveIndicator() {
     if (currentSlotId !== null) {
         const savedDataRaw = localStorage.getItem(getSaveSlotKey(currentSlotId));
-        if(!savedDataRaw) return;
+        if (!savedDataRaw) return;
         const saveData = JSON.parse(savedDataRaw);
-        
+
         const saveName = saveData.saveName || `Jogo Salvo ${currentSlotId}`;
         const isPremium = currentSlotId > 3;
         currentSaveIndicator.innerHTML = `${translations[currentLanguage].activeSave} ${isPremium ? '★' : ''} ${saveName} ${isPremium ? '★' : ''}`;
@@ -233,7 +233,7 @@ function updateCurrentSaveIndicator() {
 function renderSaveSlots() {
     saveSlotsContainer.innerHTML = '';
     saveSlotBackButton.style.display = gameContextLoaded ? 'block' : 'none';
-    
+
     setTimeout(() => {
         saveSlotsContainer.classList.add('loaded');
     }, 300);
@@ -435,9 +435,9 @@ deathSpriteUrls.forEach((url, index) => {
     deathSprites[index] = sprite;
 });
 
-setTimeout(() => { 
-    if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); } 
-    if (!enemySpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo.'); } 
+setTimeout(() => {
+    if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); }
+    if (!enemySpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo.'); }
 }, 2000);
 
 class DeathParticle {
@@ -590,38 +590,38 @@ class Player {
     drawWinAnimation() {
         if (!this.finalAnimationState) return;
         const anim = this.finalAnimationState;
-    
+
         anim.particles.forEach(p => {
             p.update();
             p.draw();
         });
         anim.particles = anim.particles.filter(p => p.life > 0);
-    
+
         if (playerWinSpriteLoaded) {
             ctx.save();
             ctx.globalAlpha = anim.alpha;
-            
+
             ctx.shadowColor = '#fff';
             ctx.shadowBlur = 25;
-    
+
             ctx.drawImage(
                 playerWinSprite,
                 0, 0, playerWinSprite.width, playerWinSprite.height,
                 this.position.x,
-                anim.y,        
-                this.width,    
-                this.height    
+                anim.y,
+                this.width,
+                this.height
             );
-    
+
             ctx.restore();
         }
     }
 
     startDeathAnimation(killerType = 'enemy') {
         if (this.deathState) return;
-    
+
         const particleColor = killerType === 'acid' ? 'rgba(100, 255, 100, 1)' : 'rgba(255, 215, 0, 1)';
-    
+
         this.deathState = {
             startTime: Date.now(),
             duration: 1500,
@@ -632,7 +632,7 @@ class Player {
             shakeIntensity: 5,
             shakeDuration: 500
         };
-    
+
         for (let i = 0; i < 50; i++) {
             this.deathState.particles.push(new DeathParticle(
                 this.position.x + this.width / 2,
@@ -640,54 +640,54 @@ class Player {
                 particleColor
             ));
         }
-    
+
         GameAudio.sounds.gameOver.triggerAttackRelease("C1", "1.5s");
         if (GameAudio.sounds.shatter) {
-             GameAudio.sounds.shatter.triggerAttackRelease("C5", "0.8s");
+            GameAudio.sounds.shatter.triggerAttackRelease("C5", "0.8s");
         }
     }
-    
+
     drawDeathAnimation(ctx) {
         if (!this.deathState) return;
-    
+
         const elapsed = Date.now() - this.deathState.startTime;
         const progress = Math.min(elapsed / this.deathState.duration, 1);
-    
+
         if (elapsed < this.deathState.shakeDuration) {
             const shakeFactor = 1 - (elapsed / this.deathState.shakeDuration);
             const shakeX = (Math.random() - 0.5) * this.deathState.shakeIntensity * shakeFactor;
             const shakeY = (Math.random() - 0.5) * this.deathState.shakeIntensity * shakeFactor;
             ctx.translate(shakeX, shakeY);
         }
-    
+
         const vignetteOpacity = Math.min(0.9, progress * 1.2);
         const gradient = ctx.createRadialGradient(canvas.width / 2, canvas.height / 2, canvas.width * 0.3, canvas.width / 2, canvas.height / 2, canvas.width);
         gradient.addColorStop(0, 'rgba(0,0,0,0)');
         gradient.addColorStop(1, `rgba(0,0,0,${vignetteOpacity})`);
         ctx.fillStyle = gradient;
         ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2); // fill entire screen despite shake
-        
+
         ctx.globalCompositeOperation = 'saturation';
         ctx.fillStyle = `hsl(0, 0%, ${100 - (progress * 100)}%)`;
         ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2);
         ctx.globalCompositeOperation = 'source-over';
-    
+
         if (elapsed > this.deathState.shatterTime) {
             this.deathState.hasShattered = true;
         }
-    
+
         if (this.deathState.hasShattered) {
             this.deathState.particles.forEach(p => {
                 p.update();
                 p.draw(ctx);
             });
         } else {
-           this.draw(); // Draw the player normally before shattering
+            this.draw(); // Draw the player normally before shattering
         }
     }
 
-    resetDeathState() { 
-        this.deathState = null; 
+    resetDeathState() {
+        this.deathState = null;
     }
 
     update(platforms, waterRects) { this.handleMovement(waterRects); this.applyGravity(); this.checkCollisions(platforms, waterRects); this.lastY = this.position.y; }
@@ -711,7 +711,17 @@ class Player {
         const now = Date.now(); const center = { x: this.position.x + this.width / 2, y: this.position.y + this.height / 2 }; const isInWater = game.level.water.some(water => this.isCollidingWith(water));
         if (type === 'short' && now - this.lastShortPing > this.shortPingCooldown) {
             this.lastShortPing = now; let radius = isInWater ? 60 : 120; pings.push(new Ping(center.x, center.y, radius, 1500, 'rgba(0, 255, 255, 1)', 4, 15)); createNoise(center.x, center.y, radius * 2, 0.3); GameAudio.sounds.shortPing.triggerAttackRelease("C5", "8n");
-        } else if (type === 'long' && now - this.lastLongPing > this.longPingCooldown) { this.lastLongPing = now; let radius = isInWater ? 120 : 300; pings.push(new Ping(center.x, center.y, radius, 4000, 'rgba(255, 255, 255, 1)', 6, 40)); createNoise(center.x, center.y, radius * 2.5, 1.0); GameAudio.sounds.longPing.triggerAttackRelease("C3", "0.5s"); }
+        } else if (type === 'long' && now - this.lastLongPing > this.longPingCooldown) {
+            this.lastLongPing = now;
+            let radius = isInWater ? 120 : 300;
+            pings.push(new Ping(center.x, center.y, radius, 4000, 'rgba(255, 255, 255, 1)', 6, 40));
+            createNoise(center.x, center.y, radius * 2.5, 1.0);
+            GameAudio.sounds.longPing.triggerAttackRelease("C3", "0.5s");
+            const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
+            if (distanceToPlayer < 400) {
+                this.state = 'chasing';
+            }
+        }
     }
 }
 class Ping { constructor(x, y, maxRadius, duration, color, speed, particleCount) { this.position = { x, y }; this.radius = 0; this.maxRadius = maxRadius; this.duration = duration; this.color = color; this.speed = speed; this.creationTime = Date.now(); this.active = true; this.particles = []; for (let i = 0; i < particleCount; i++) { this.particles.push(new PingParticle(this.position.x, this.position.y, this.color)); } } update() { this.radius += this.speed; this.particles.forEach(p => { if (p.life > 0) p.update(); }); if (this.radius >= this.maxRadius) { this.radius = this.maxRadius; if (Date.now() - this.creationTime > 500) { this.active = false; } } } draw() { const elapsed = Date.now() - this.creationTime; const alpha = Math.max(0, 1 - elapsed / (this.duration * 0.5)); for (let i = 0; i < 3; i++) { ctx.beginPath(); const currentRadius = this.radius - i * 15; if (currentRadius > 0) { ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * (1 - i * 0.3)})`; ctx.lineWidth = 1 + (1 - alpha); ctx.arc(this.position.x, this.position.y, currentRadius, 0, Math.PI * 2); ctx.stroke(); } } this.particles.forEach(p => { if (p.life > 0) p.draw(); }); } }
@@ -774,12 +784,12 @@ class Enemy {
         this.velocity.x = this.speed;
         this.chaseStartTime = null;
     }
-    
-    draw(player) { 
-        const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y); 
+
+    draw(player) {
+        const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
         if (Date.now() < this.revealTime || distanceToPlayer < 150 || window.DEV_MODE_REVEAL_MAP) {
-            ctx.save(); 
-            
+            ctx.save();
+
             const glowX = this.position.x + this.width / 2;
             const glowY = this.position.y + this.height / 2;
             const glowRadius = Math.max(this.width, this.height) * 0.6;
@@ -790,7 +800,7 @@ class Enemy {
             ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(255, 0, 0, 0.08)';
             ctx.fill();
-            
+
             // Seleciona o sprite de acordo com o frame da animação
             let spriteToDraw = enemySprite;
             let spriteLoaded = enemySpriteLoaded;
@@ -833,20 +843,20 @@ class Enemy {
                     ctx.restore();
                 }
             } else {
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)'; 
-                ctx.beginPath(); 
-                ctx.moveTo(this.position.x, this.position.y + this.height); 
-                ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7); 
-                ctx.lineTo(this.position.x + this.width, this.position.y + this.height); 
-                ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5); 
-                ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true); 
-                ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5); 
-                ctx.closePath(); 
-                ctx.fill(); 
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+                ctx.beginPath();
+                ctx.moveTo(this.position.x, this.position.y + this.height);
+                ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7);
+                ctx.lineTo(this.position.x + this.width, this.position.y + this.height);
+                ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5);
+                ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true);
+                ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5);
+                ctx.closePath();
+                ctx.fill();
             }
-            ctx.restore(); 
-        
-        } 
+            ctx.restore();
+
+        }
     }
 
     reveal() {
@@ -920,6 +930,14 @@ class Enemy {
             this.state = 'chasing';
             this.target = player.position;
         }
+        if (distanceToPlayer > 400) {
+            if (this.state == 'chasing') {
+                GameAudio.decreaseTension();
+                isChased = false;
+                if (player) player.isShaking = false;
+            }
+            this.state = 'patrol';
+        }
 
         if (this.state === 'patrol' && this.onGround) {
             const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1;
@@ -935,7 +953,6 @@ class Enemy {
                 this.velocity.x *= -1;
             }
         }
-        
         switch (this.state) {
             case 'patrol':
                 this.velocity.x = this.speed * Math.sign(this.velocity.x || 1);
@@ -961,7 +978,7 @@ class Enemy {
                     return;
                 }
                 this.velocity.x = this.speed * 2 * Math.sign(this.target.x - this.position.x);
-                
+
                 if (this.velocity.x > 0) this.facing = 'right';
                 else if (this.velocity.x < 0) this.facing = 'left';
 
@@ -1028,7 +1045,7 @@ class HeartOfLight {
             });
         }, 1500);
     }
-}class Water { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; } draw() { ctx.fillStyle = 'rgba(0, 50, 150, 0.3)'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); } }
+} class Water { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; } draw() { ctx.fillStyle = 'rgba(0, 50, 150, 0.3)'; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); } }
 class AcidWater { constructor(x, y, width, height) { this.position = { x, y }; this.width = width; this.height = height; } draw() { const grad = ctx.createLinearGradient(this.position.x, this.position.y, this.position.x, this.position.y + this.height); grad.addColorStop(0, `rgba(100, 255, 100, 0.4)`); grad.addColorStop(1, `rgba(50, 200, 50, 0.7)`); ctx.fillStyle = grad; ctx.fillRect(this.position.x, this.position.y, this.width, this.height); } }
 class Coin { constructor(x, y) { this.x = x; this.y = y; this.radius = 14; this.collected = false; this.animation = Math.random() * Math.PI * 2; } draw() { if (this.collected) return; const pulse = Math.sin(Date.now() / 200 + this.animation) * 3; ctx.save(); ctx.beginPath(); ctx.arc(this.x + this.radius, this.y + this.radius + pulse, this.radius, 0, Math.PI * 2); ctx.fillStyle = 'gold'; ctx.shadowColor = '#fff200'; ctx.shadowBlur = 10; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke(); ctx.restore(); } isCollidingWith(player) { const px = player.position.x + player.width / 2; const py = player.position.y + player.height / 2; const dx = (this.x + this.radius) - px; const dy = (this.y + this.radius) - py; const dist = Math.sqrt(dx * dx + dy * dy); return dist < this.radius + Math.max(player.width, player.height) / 2 - 8; } }
 
@@ -1049,12 +1066,12 @@ const game = {
     level: null,
     loadLevel: function (levelIndex) {
         if (levelIndex >= levels.length) { this.winGame(); return; }
-        
+
         // Para a música do menu quando um nível for carregado
         if (typeof GameAudio !== 'undefined' && GameAudio.stopMenuMusic) {
             GameAudio.stopMenuMusic();
         }
-        
+
         this.level = { ...levels[levelIndex] };
         player = new Player(); player.reset(this.level.playerStart.x, this.level.playerStart.y);
         enemies = this.level.enemies.map(e => new Enemy(e.x, e.y));
@@ -1091,7 +1108,7 @@ const game = {
         const minutes = Math.floor(timeTaken / 60);
         const seconds = timeTaken % 60;
         const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
+
         const embed = createWebhookEmbed(
             '🏆 JOGO ZERADO!',
             `Um jogador completou o jogo ECO!`,
@@ -1117,7 +1134,7 @@ const game = {
             startTime: Date.now(),
             duration: 4000,
             timeTaken: timeTaken,
-            particles: [], 
+            particles: [],
             explosionTriggered: false
         };
 
@@ -1148,7 +1165,7 @@ const game = {
                         cooldownsHud.classList.remove('visible');
                         document.getElementById('coin-hud').classList.remove('visible');
                         GameAudio.stopAllMusic();
-                        
+
                         // Inicia a música do menu após vencer
                         if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
                             await GameAudio.startMenuMusic();
@@ -1232,7 +1249,7 @@ function isCircleIntersectingRect(circle, rect) { const distX = Math.abs(circle.
 
 function animate() {
     requestAnimationFrame(animate);
-    
+
     ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1253,7 +1270,7 @@ function animate() {
         }
         player.drawDeathAnimation(ctx);
     } else {
-         // Lógica de renderização normal do jogo
+        // Lógica de renderização normal do jogo
         if (isGameEnding && player && player.finalAnimationState) {
             player.draw();
         } else if (game.level) {
@@ -1284,7 +1301,7 @@ function animate() {
         } else {
             if (chaseVignetteOpacity > 0) chaseVignetteOpacity -= 0.05;
         }
-        
+
         if (chaseVignetteOpacity > 0) {
             const pulse = Math.sin(Date.now() / 150) * 0.1 + 0.9;
             const finalOpacity = chaseVignetteOpacity * pulse;
@@ -1295,7 +1312,7 @@ function animate() {
             ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
     }
-    
+
     ctx.restore();
 
     // Lógica de atualização do jogo (não-renderização)
@@ -1404,7 +1421,7 @@ async function sendDiscordWebhook(embed) {
                 embeds: [embed]
             })
         });
-        
+
         if (!response.ok) {
             console.error('Erro ao enviar webhook:', response.status);
         }
@@ -1447,28 +1464,28 @@ document.addEventListener('touchstart', initializeAudioOnFirstInteraction, { onc
 
 startGameButton.addEventListener('click', async () => {
     console.log('🎮 Botão Iniciar Aventura clicado');
-    
+
     // Para a música do menu antes de iniciar o jogo
     if (typeof GameAudio !== 'undefined' && GameAudio.stopMenuMusic) {
         GameAudio.stopMenuMusic();
     }
-    
+
     // Esconde o menu e mostra os elementos do jogo
     mainMenu.classList.remove('visible');
     hud.classList.add('visible');
     cooldownsHud.classList.add('visible');
     document.getElementById('coin-hud').classList.add('visible');
-    
+
     // Esconde o glitch-bg
     glitchBg.style.display = 'none';
-    
+
     if (!gameStartTime) gameStartTime = Date.now();
-    
+
     // Inicia a música do jogo
     console.log('🎵 Chamando startAmbientMusic...');
     await GameAudio.startAmbientMusic();
     game.loadLevel(currentLevelIndex);
-    
+
     console.log('✅ Jogo iniciado com sucesso');
 });
 
@@ -1517,7 +1534,7 @@ backToMainMenuButton.addEventListener('click', async () => {
     hud.classList.remove('visible');
     cooldownsHud.classList.remove('visible');
     document.getElementById('coin-hud').classList.remove('visible');
-    
+
     // Inicia a música do menu quando voltar
     if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
         await GameAudio.startMenuMusic();
@@ -1542,11 +1559,11 @@ let lastMenuState = false;
 async function updateGlitchBgVisibility() {
     const showGlitch = mainMenu.classList.contains('visible');
     glitchBg.style.display = showGlitch ? 'block' : 'none';
-    
+
     // Só controla a música se o estado mudou
     if (showGlitch !== lastMenuState) {
         lastMenuState = showGlitch;
-        
+
         // Controla a música do menu apenas quando o menu fica visível
         if (showGlitch) {
             if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
@@ -1611,8 +1628,8 @@ Object.assign(window.ecoGame, {
     get heartOfLight() { return heartOfLight; },
     get totalCoins() { return totalCoins; },
     get GameAudio() { return GameAudio; },
-    setTotalCoins: (value) => { 
-        totalCoins = value; 
+    setTotalCoins: (value) => {
+        totalCoins = value;
         if (typeof updateCoinHUD === 'function') updateCoinHUD();
         if (typeof saveGameState === 'function') saveGameState();
     },
@@ -1652,11 +1669,11 @@ function setupVolumeSliders() {
         slider.addEventListener('input', (e) => {
             const slider = e.target;
             updateSliderFill(slider);
-            
+
             if (slider.id === 'master-volume-slider') gameSettings.masterVolume = slider.value;
             if (slider.id === 'music-volume-slider') gameSettings.musicVolume = slider.value;
             if (slider.id === 'effects-volume-slider') gameSettings.effectsVolume = slider.value;
-            
+
             if (typeof GameAudio !== 'undefined' && GameAudio.updateVolumes) GameAudio.updateVolumes();
             saveSettings();
         });
@@ -1669,7 +1686,7 @@ function setupCustomSelect() {
 
     const trigger = container.querySelector('#custom-select-trigger');
     const items = container.querySelector('#custom-select-items');
-    const originalParent = items.parentNode; 
+    const originalParent = items.parentNode;
 
     const closeAllSelect = () => {
         if (!items.classList.contains('select-hide')) {
@@ -1682,7 +1699,7 @@ function setupCustomSelect() {
     trigger.addEventListener('click', (e) => {
         e.stopPropagation();
         const wasHidden = items.classList.contains('select-hide');
-        
+
         closeAllSelect();
 
         if (wasHidden) {
@@ -1702,7 +1719,7 @@ function setupCustomSelect() {
             setLanguage(item.getAttribute('data-value'));
         });
     });
-    
+
     document.addEventListener('click', closeAllSelect);
     window.addEventListener('scroll', closeAllSelect, true);
 }
@@ -1718,11 +1735,11 @@ window.onload = () => {
     renderSaveSlots();
     updateGlitchBgVisibility();
     glitchBgLoop();
-    
+
     if (typeof GameAudio !== 'undefined' && GameAudio.updateVolumes) {
         GameAudio.updateVolumes();
     }
-    
+
     setupVolumeSliders();
     animate();
 };
