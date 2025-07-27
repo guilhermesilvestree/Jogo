@@ -16,7 +16,6 @@
     <link rel="icon" href="assets/aura.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
     <style>
-        /* [Todo o CSS anterior permanece o mesmo...] */
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
 
         :root {
@@ -30,6 +29,7 @@
             /* Prata */
             --rank3-color: #CD7F32;
             /* Bronze */
+            --danger-glow: #ff6b6b; /* ADICIONADO */
         }
 
         body {
@@ -152,6 +152,8 @@
         .overlay.visible {
             opacity: 1;
             pointer-events: all;
+            backdrop-filter: blur(8px); /* ADICIONADO */
+            -webkit-backdrop-filter: blur(8px); /* ADICIONADO */
         }
 
         .overlay h1 {
@@ -857,18 +859,6 @@
 
             .shop-footer {
                 padding: 16px;
-            }
-        }
-
-        @keyframes fadeInScaleUp {
-            from {
-                opacity: 0;
-                transform: scale(0.95);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
             }
         }
 
@@ -1735,7 +1725,6 @@
             width: 100%;
         }
 
-        /* --- CUSTOM SELECTOR ESTILOS ATUALIZADOS --- */
         .custom-select-container {
             position: relative;
             width: 100%;
@@ -1777,14 +1766,14 @@
             transform: translateY(-50%) rotate(180deg);
         }
         .select-items {
-            position: fixed; /* MUDANÇA: Para flutuar acima de tudo */
+            position: fixed;
             background-color: var(--dark-blue);
-            z-index: 100; /* MUDANÇA: z-index alto para ficar na frente */
+            z-index: 100;
             border: 1px solid var(--cyan-glow);
             border-radius: 5px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            max-height: 150px; /* MUDANÇA: Altura máxima para habilitar scroll */
-            overflow-y: auto; /* MUDANÇA: Habilita scroll vertical */
+            max-height: 150px;
+            overflow-y: auto;
         }
         .select-items::-webkit-scrollbar { width: 6px; }
         .select-items::-webkit-scrollbar-track { background: transparent; }
@@ -1980,6 +1969,127 @@
                 grid-row: 4;
             }
         }
+
+        /* ====================================================== */
+        /* NOVO SISTEMA DE DESIGN PARA TELAS DE MENSAGEM (ADICIONADO) */
+        /* ====================================================== */
+        
+        /* Animação de entrada para os elementos da caixa */
+        @keyframes fadeInScaleUp {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Caixa de mensagem base (para morte, vitória, etc.) */
+        .message-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            /* background: linear-gradient(145deg, rgba(10, 30, 40, 0.9), rgba(5, 15, 20, 0.9)); */
+            /* border: 1px solid rgba(0, 255, 255, 0.4); */
+            border-radius: 12px;
+            /* box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4); */
+            padding: 2rem 2.5rem;
+            width: 90%;
+            max-width: 450px;
+            animation: fadeInScaleUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+        }
+
+        /* Container especial para a tela de introdução (Nível 1), que não usa a caixa */
+        .message-box.intro-message {
+            background: none;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            max-width: 700px;
+        }
+
+        /* Ícone da mensagem (Morte, Vitória, etc) */
+        .message-icon {
+            font-size: 3em;
+            margin-bottom: 0.75rem;
+            color: var(--cyan-glow);
+            text-shadow: 0 0 15px var(--cyan-glow);
+        }
+        
+        .message-box #message-title, .intro-message #message-title {
+            color: #fff;
+            text-shadow: 0 0 10px var(--cyan-glow);
+        }
+        
+        .message-box #message-text, .intro-message #message-text {
+            color: #eee;
+        }
+        
+        .message-box #message-button, .intro-message #message-button {
+             margin-top: 1.5rem;
+        }
+        
+        /* DESIGN ELEGANTE PARA A TELA DE "CONTINUAR FASE" (NÍVEIS 2+) */
+        .level-continue-box {
+            padding: 2.5rem;
+        }
+        .level-continue-box .message-icon {
+            font-size: 2.5em;
+        }
+        .level-continue-box #message-title {
+            color: var(--cyan-glow);
+            font-size: 2.5em;
+            margin: 0;
+        }
+        .level-continue-box #message-text {
+            font-size: 1.1em;
+            opacity: 0.8;
+            margin-top: 0.5rem;
+        }
+        .level-continue-box .divider {
+            width: 40%;
+            height: 1px;
+            background: var(--cyan-glow);
+            box-shadow: 0 0 10px var(--cyan-glow);
+            margin: 1rem 0;
+            opacity: 0.5;
+        }
+
+        /* Aplica animação de entrada em todos os filhos da caixa */
+        .message-box > * {
+            opacity: 0;
+            transform: translateY(15px);
+            animation: item-fade-in 0.5s ease-out forwards;
+        }
+        .message-box .message-icon { animation-delay: 0.1s; }
+        .message-box #message-title { animation-delay: 0.2s; }
+        .message-box .divider { animation-delay: 0.3s; }
+        .message-box #message-text { animation-delay: 0.4s; }
+        .message-box #message-button { animation-delay: 0.5s; }
+
+        /* Remove a animação da caixa customizada de introdução (Nível 1) */
+        .intro-message > * {
+            animation: none;
+            opacity: 1;
+            transform: none;
+        }
+
+        /* Estilos da tela de introdução do Nível 1 */
+        .key-style{display:inline-block;padding:5px 10px;margin:0 4px;font-family:'Courier New',Courier,monospace;font-size:1em;font-weight:700;color:var(--cyan-glow);background-color:rgba(0,255,255,.1);border:2px solid var(--cyan-glow);border-radius:6px;box-shadow:0 2px 0 rgba(0,150,150,.8),inset 0 0 8px rgba(0,255,255,.2);transform:translateY(-2px);line-height:1}
+        .intro-message #message-title{font-size:2.2em;margin-bottom:15px}
+        .intro-columns-container{display:flex;justify-content:center;gap:20px;margin-top:15px;width:100%;max-width:650px}
+        .intro-column{flex:1;background:rgba(0,0,0,.3);padding:20px 15px;border-radius:8px;border:1px solid rgba(0,255,255,.25);display:flex;flex-direction:column;gap:18px}
+        .column-title{font-size:1.2em;color:#fff;text-align:center;margin:0 0 5px 0;padding-bottom:8px;border-bottom:1px solid rgba(0,255,255,.3)}
+        .instruction-item{display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px}
+        .instruction-keys{display:flex;align-items:center;gap:10px}
+        .instruction-icon{font-size:1.4em;color:var(--cyan-glow);width:28px;text-align:center}
+        .instruction-desc{font-size:.9em;opacity:.8}
+        .intro-message #message-button{margin-top:25px;padding:14px 30px;font-size:1.2em;min-width:250px}
+
     </style>
 </head>
 
@@ -2011,11 +2121,7 @@
             </div>
         </div>
         <div id="message-overlay" class="overlay">
-            <h1 id="message-title"></h1>
-            <p id="message-text"></p>
-            <div id="loading-indicator">Gerando sussurro...</div>
-            <button id="message-button"></button>
-        </div>
+            </div>
         <div id="main-menu" class="overlay">
             <h1 data-translate-key="gameTitle">Eco</h1>
             <p data-translate-key="gameSubtitle">A escuridão ouve cada passo seu.</p>
@@ -2120,7 +2226,7 @@
                                 d="M9.8,9.802c-.755,.753-1.122,1.476-1.122,2.208,0,.957,.64,1.706,1.122,2.187,.74,.739,1.47,1.108,2.2,1.108s1.46-.37,2.2-1.108c.755-.753,1.122-1.476,1.122-2.208,0-.957-.64-1.706-1.122-2.187-1.48-1.478-2.92-1.478-4.4,0Zm3.694,3.688c-1.251,1.248-2.042,.944-2.988,0-.565-.564-.828-1.034-.828-1.479,0-.454,.271-.944,.828-1.5,.583-.582,1.065-.826,1.511-.826,.511,0,.972,.322,1.478,.826,.565,.564,.828,1.034,.828,1.479,0,.454-.271,.944-.828,1.5Z"
                                 stroke="currentColor" stroke-width="1" fill="none" />
                             <path
-                                d="M23.019,11.948c.008-1.595-.817-2.481-2.521-2.7-.188-.394-.417-.787-.694-1.188,1.205-1.456,1.21-2.694,.026-3.876-1.183-1.181-2.425-1.175-3.884,.029-.401-.274-.794-.501-1.188-.688-.217-1.706-1.134-2.524-2.705-2.524-1.602,.008-2.495,.849-2.725,2.569-.392,.189-.791,.421-1.19,.691-1.451-1.197-2.694-1.194-3.89,0-1.178,1.175-1.18,2.448-.001,3.882-.273,.4-.506,.798-.696,1.189-1.719,.229-2.56,1.122-2.568,2.721-.008,1.595,.817,2.481,2.521,2.7,.188,.394,.417,.787-.694,1.188-1.205,1.456-1.21,2.694-.026,3.876,1.184,1.182,2.425,1.176,3.884-.029,.401,.274,.794,.501,1.188,.688,.216,1.697,1.113,2.524,2.682,2.524,1.605,0,2.519-.849,2.749-2.569,.392-.189,.791-.421,1.19-.691,1.451,1.197,2.694,1.193,3.89,0,1.178-1.175,1.18-2.448,.001-3.882,.273-.4,.506-.798-.696-1.189,1.719-.229,2.56-1.122,2.568-2.721Zm-3.36,2.053c-.227,.515-.544,1.051-.942,1.594-.142,.193-.127,.459,.036,.635,1.373,1.487,.898,2.2,.295,2.802-.63,.628-1.321,1.078-2.812-.295-.175-.162-.44-.176-.634-.036-.541,.395-1.077,.71-1.595,.937-.167,.073-.282,.232-.297,.415-.139,1.615-.779,1.942-1.766,1.947-1.008-.027-1.609-.304-1.734-1.9-.015-.186-.131-.348-.302-.421-.521-.222-1.041-.526-1.588-.929-.089-.065-.193-.097-.296-.097-.122,0-.243,.044-.338,.132-1.503,1.383-2.211,.919-2.807,.324-.595-.594-1.06-1.299,.323-2.797,.163-.177,.178-.444,.035-.637-.4-.541-.716-1.075-.937-1.588-.073-.17-.234-.286-.419-.301-1.587-.126-1.903-.755-1.898-1.729,.005-.984,.333-1.622,1.946-1.761,.182-.016,.341-.129,.415-.296,.227-.515-.544,1.051-.942-1.594,.142-.193,.127-.459-.036-.635-1.373-1.487-.898-2.2-.295-2.802,.606-.604,1.321-1.08,2.812,.295,.176,.163,.441,.178,.634,.036,.541-.395,1.077-.71,1.595-.937,.167-.073,.282,.232,.297,.415,.139-1.615,.779-1.942,1.766-1.947,.99-.027,1.608,.304,1.734,1.9,.015,.186,.131-.348,.302,.421,.521,.222,1.041-.526,1.588,.929,.193,.142,.458,.127,.635-.035,1.504-1.382,2.212-.918,2.807-.324,.595,.594,1.06,1.299-.323,2.797-.163,.177-.178-.444-.035-.637,.4,.541,.716-1.075-.937,1.588,.073,.17,.234-.286-.419,.301,1.587,.126,1.903-.755,1.898,1.729-.005,.984-.333-1.622-1.946,1.761-.182,.016-.341-.129,.415-.296Z"
+                                d="M23.019,11.948c.008-1.595-.817-2.481-2.521-2.7-.188-.394-.417-.787-.694-1.188,1.205-1.456,1.21-2.694,.026-3.876-1.183-1.181-2.425-1.175-3.884,.029-.401-.274-.794-.501-1.188-.688-.217-1.706-1.134-2.524-2.705-2.524-1.602,.008-2.495,.849-2.725,2.569-.392,.189-.791,.421-1.19,.691-1.451-1.197-2.694-1.194-3.89,0-1.178,1.175-1.18,2.448-.001,3.882-.273,.4-.506,.798-.696,1.189-1.719,.229-2.56,1.122-2.568,2.721-.008,1.595,.817,2.481,2.521,2.7,.188,.394,.417,.787-.694,1.188-1.205,1.456-1.21,2.694-.026,3.876,1.184,1.182,2.425,1.176,3.884-.029,.401,.274,.794-.501,1.188,.688,.216,1.697,1.113,2.524,2.682,2.524,1.605,0,2.519-.849,2.749-2.569,.392-.189,.791-.421,1.19-.691,1.451,1.197,2.694,1.193,3.89,0,1.178-1.175,1.18-2.448,.001-3.882,.273-.4,.506-.798-.696-1.189,1.719-.229,2.56-1.122,2.568-2.721Zm-3.36,2.053c-.227,.515-.544,1.051-.942,1.594-.142,.193-.127,.459,.036,.635,1.373,1.487,.898,2.2,.295,2.802-.63,.628-1.321,1.078-2.812-.295-.175-.162-.44-.176-.634-.036-.541,.395-1.077,.71-1.595,.937-.167,.073-.282,.232-.297,.415-.139,1.615-.779,1.942-1.766,1.947-1.008-.027-1.609-.304-1.734-1.9-.015-.186-.131-.348-.302-.421-.521-.222-1.041-.526-1.588-.929-.089-.065-.193-.097-.296-.097-.122,0-.243,.044-.338,.132-1.503,1.383-2.211,.919-2.807,.324-.595-.594-1.06-1.299,.323-2.797,.163-.177,.178-.444,.035-.637-.4-.541-.716-1.075-.937-1.588-.073-.17-.234-.286-.419-.301-1.587-.126-1.903-.755-1.898-1.729,.005-.984,.333-1.622,1.946-1.761,.182-.016,.341-.129,.415-.296,.227-.515-.544,1.051-.942-1.594,.142-.193,.127-.459-.036-.635-1.373-1.487-.898-2.2-.295-2.802,.606-.604,1.321-1.08,2.812,.295,.176,.163,.441,.178,.634,.036,.541-.395,1.077-.71,1.595-.937,.167-.073,.282,.232,.297,.415,.139-1.615,.779-1.942,1.766-1.947,.99-.027,1.608,.304,1.734,1.9,.015,.186,.131-.348,.302,.421,.521,.222,1.041-.526,1.588,.929,.193,.142,.458,.127,.635-.035,1.504-1.382,2.212-.918,2.807-.324,.595,.594,1.06,1.299-.323,2.797-.163,.177-.178-.444-.035-.637,.4,.541,.716-1.075,.937,1.588,.073,.17,.234-.286-.419,.301,1.587,.126,1.903-.755,1.898,1.729-.005,.984-.333-1.622-1.946,1.761-.182,.016-.341-.129,.415-.296Z"
                                 stroke="currentColor" stroke-width="1" fill="none" />
                         </svg>
                         <span data-translate-key="pauseOptions">Opções</span>

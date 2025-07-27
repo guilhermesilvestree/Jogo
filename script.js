@@ -418,6 +418,12 @@ enemySprite2.src = 'assets/inimigo2.png';
 let enemySprite2Loaded = false;
 enemySprite2.onload = () => { enemySprite2Loaded = true; };
 
+// NOVO: Adicionando o sprite do inimigo atordoado
+const enemyStunSprite = new window.Image();
+enemyStunSprite.src = 'assets/inimigo1.png';
+let enemyStunSpriteLoaded = false;
+enemyStunSprite.onload = () => { enemyStunSpriteLoaded = true; };
+
 const deathSprites = [];
 const deathSpriteUrls = [
     'assets/morte/ecoskin-morte1.png',
@@ -438,6 +444,8 @@ deathSpriteUrls.forEach((url, index) => {
 setTimeout(() => {
     if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); }
     if (!enemySpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo.'); }
+    // NOVO: Verificação do sprite de atordoamento
+    if (!enemyStunSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo atordoado.'); }
 }, 2000);
 
 class DeathParticle {
@@ -775,6 +783,15 @@ class Enemy {
         this.animationFrame = 0;
         this.lastFrameChange = Date.now();
         this.frameInterval = 300; // ms
+        // Propriedades de atordoamento
+        this.isStunned = false;
+        this.stunnedUntil = 0;
+    }
+
+    stun(duration) {
+        this.isStunned = true;
+        this.stunnedUntil = Date.now() + duration;
+        this.velocity.x = 0; // Para o movimento imediatamente
     }
 
     reset() {
@@ -783,31 +800,40 @@ class Enemy {
         this.target = null;
         this.velocity.x = this.speed;
         this.chaseStartTime = null;
+        this.isStunned = false;
+        this.stunnedUntil = 0;
     }
 
     draw(player) {
         const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
-        if (Date.now() < this.revealTime || distanceToPlayer < 150 || window.DEV_MODE_REVEAL_MAP) {
+        
+        // A condição para desenhar o inimigo: estar atordoado, ou ter sido revelado, ou o jogador estar perto.
+        if (this.isStunned || Date.now() < this.revealTime || distanceToPlayer < 150 || window.DEV_MODE_REVEAL_MAP) {
             ctx.save();
 
             const glowX = this.position.x + this.width / 2;
             const glowY = this.position.y + this.height / 2;
             const glowRadius = Math.max(this.width, this.height) * 0.6;
+            const glowColor = this.isStunned ? '#ffff00' : '#ff0000';
             ctx.globalAlpha = 0.1;
             ctx.shadowBlur = 15;
-            ctx.shadowColor = '#ff0000';
+            ctx.shadowColor = glowColor;
             ctx.beginPath();
             ctx.arc(glowX, glowY, glowRadius, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.08)';
+            ctx.fillStyle = `rgba(${this.isStunned ? '255, 255, 0' : '255, 0, 0'}, 0.08)`;
             ctx.fill();
 
-            // Seleciona o sprite de acordo com o frame da animação
-            let spriteToDraw = enemySprite;
-            let spriteLoaded = enemySpriteLoaded;
-            if (this.animationFrame === 1 && enemySprite2Loaded) {
-                spriteToDraw = enemySprite2;
-                spriteLoaded = enemySprite2Loaded;
+            let spriteToDraw;
+            let spriteLoaded;
+
+            if (this.isStunned) {
+                spriteToDraw = enemyStunSprite;
+                spriteLoaded = enemyStunSpriteLoaded;
+            } else {
+                spriteToDraw = this.animationFrame === 1 && enemySprite2Loaded ? enemySprite2 : enemySprite;
+                spriteLoaded = this.animationFrame === 1 && enemySprite2Loaded ? enemySprite2Loaded : enemySpriteLoaded;
             }
+
             if (spriteLoaded) {
                 ctx.globalAlpha = 0.9;
                 const spriteAspectRatio = spriteToDraw.width / spriteToDraw.height;
@@ -826,36 +852,20 @@ class Enemy {
                 }
                 const flip = this.facing === 'left';
                 if (flip) {
-                    ctx.drawImage(
-                        spriteToDraw,
-                        0, 0, spriteToDraw.width, spriteToDraw.height,
-                        drawX, drawY, drawWidth, drawHeight
-                    );
+                    ctx.drawImage(spriteToDraw, 0, 0, spriteToDraw.width, spriteToDraw.height, drawX, drawY, drawWidth, drawHeight);
                 } else {
                     ctx.save();
                     ctx.translate(drawX + drawWidth, 0);
                     ctx.scale(-1, 1);
-                    ctx.drawImage(
-                        spriteToDraw,
-                        0, 0, spriteToDraw.width, spriteToDraw.height,
-                        0, drawY, drawWidth, drawHeight
-                    );
+                    ctx.drawImage(spriteToDraw, 0, 0, spriteToDraw.width, spriteToDraw.height, 0, drawY, drawWidth, drawHeight);
                     ctx.restore();
                 }
             } else {
-                ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-                ctx.beginPath();
-                ctx.moveTo(this.position.x, this.position.y + this.height);
-                ctx.lineTo(this.position.x + this.width / 2, this.position.y + this.height * 0.7);
-                ctx.lineTo(this.position.x + this.width, this.position.y + this.height);
-                ctx.lineTo(this.position.x + this.width * 0.8, this.position.y + this.height * 0.5);
-                ctx.arc(this.position.x + this.width / 2, this.position.y + this.height * 0.3, this.width / 2.5, 0, Math.PI, true);
-                ctx.lineTo(this.position.x + this.width * 0.2, this.position.y + this.height * 0.5);
-                ctx.closePath();
-                ctx.fill();
+                ctx.globalAlpha = 0.9;
+                ctx.fillStyle = this.isStunned ? 'yellow' : 'red';
+                ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
             }
             ctx.restore();
-
         }
     }
 
@@ -863,16 +873,49 @@ class Enemy {
         this.revealTime = Date.now() + 2000;
     }
 
+    // =============================================================
+    // MÉTODO UPDATE COM A FÍSICA CORRIGIDA PARA O ESTADO ATORDOADO
+    // =============================================================
     update(player, platforms, noises) {
-        // Atualiza frame da animação
+        if (this.isStunned && Date.now() < this.stunnedUntil) {
+            // LÓGICA DO ESTADO ATORDOADO COM FÍSICA COMPLETA
+            this.velocity.x = 0;
+            this.onGround = false;
+            this.velocity.y += GRAVITY;
+            this.position.y += this.velocity.y;
+
+            // FÍSICA DE COLISÃO VERTICAL (copiada do estado normal para garantir consistência)
+            for (const platform of platforms) {
+                if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
+                    this.velocity.y = 0;
+                    this.onGround = true;
+                    this.position.y = platform.position.y - this.height;
+                }
+            }
+            // Checagem de segurança de colisão (também copiada do estado normal)
+            for (const platform of platforms) {
+                if (Math.abs(this.position.y + this.height - platform.position.y) < 2 && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
+                    this.velocity.y = 0;
+                    this.onGround = true;
+                    this.position.y = platform.position.y - this.height;
+                }
+            }
+            return; // Pula o resto da lógica de movimento e IA.
+        }
+
+        this.isStunned = false;
+
+        // --- LÓGICA DE ATUALIZAÇÃO NORMAL ---
         if (Date.now() - this.lastFrameChange > this.frameInterval) {
             this.animationFrame = (this.animationFrame + 1) % 2;
             this.lastFrameChange = Date.now();
         }
+        
         this.onGround = false;
         this.velocity.y += GRAVITY;
         this.position.y += this.velocity.y;
         this.position.x += this.velocity.x;
+
         for (const platform of platforms) {
             if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
                 this.velocity.y = 0;
@@ -896,6 +939,7 @@ class Enemy {
                 this.position.y = platform.position.y - this.height;
             }
         }
+        
         this.handleAI(player, platforms, noises);
     }
 
@@ -1039,9 +1083,16 @@ class HeartOfLight {
             GameAudio.sounds.levelWin.triggerAttackRelease("C5", "0.5s");
             currentLevelIndex++;
             saveGameState();
-            showMessage("levelCompleteTitle", "levelCompleteText", "nextLevelButton", () => {
-                isLevelEnding = false;
-                game.loadLevel(currentLevelIndex);
+            // MODIFICADO
+            showMessage({
+                titleKey: "levelCompleteTitle",
+                textKey: "levelCompleteText",
+                buttonKey: "nextLevelButton",
+                callback: () => {
+                    isLevelEnding = false;
+                    game.loadLevel(currentLevelIndex);
+                },
+                iconClass: "fa-solid fa-circle-check" // Ícone de sucesso
             });
         }, 1500);
     }
@@ -1159,18 +1210,25 @@ const game = {
                 setTimeout(async () => {
                     isGameEnding = false;
                     player.finalAnimationState = null;
-                    showMessage("victoryTitle", "victoryText", "mainMenuButton", async () => {
-                        mainMenu.classList.add('visible');
-                        hud.classList.remove('visible');
-                        cooldownsHud.classList.remove('visible');
-                        document.getElementById('coin-hud').classList.remove('visible');
-                        GameAudio.stopAllMusic();
-
-                        // Inicia a música do menu após vencer
-                        if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
-                            await GameAudio.startMenuMusic();
-                        }
-                    }, anim.timeTaken);
+                    // MODIFICADO
+                    showMessage({
+                        titleKey: "victoryTitle",
+                        textKey: "victoryText",
+                        buttonKey: "mainMenuButton",
+                        callback: async () => {
+                            mainMenu.classList.add('visible');
+                            hud.classList.remove('visible');
+                            cooldownsHud.classList.remove('visible');
+                            document.getElementById('coin-hud').classList.remove('visible');
+                            GameAudio.stopAllMusic();
+                            if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
+                                await GameAudio.startMenuMusic();
+                            }
+                        },
+                        timeTaken: anim.timeTaken,
+                        iconClass: "fa-solid fa-trophy", // Ícone de troféu
+                        iconColor: "var(--gold-glow)" // Cor dourada
+                    });
                 }, 1000);
             }
 
@@ -1191,7 +1249,15 @@ function checkCollisionsAndReveal() {
 
     for (const ping of pings) {
         for (const platform of game.level.platforms) { if (isCircleIntersectingRect(ping, platform)) { revealedObjects.push(new RevealedObject(platform, ping.duration)); } }
-        for (const enemy of enemies) { if (isCircleIntersectingRect(ping, enemy)) { enemy.reveal(); } }
+        for (const enemy of enemies) {
+            if (isCircleIntersectingRect(ping, enemy)) {
+                enemy.reveal();
+                // NOVO: Atordoa o inimigo ao ser atingido por um ping
+                // Ping longo (duração > 2000ms) atordoa por 4s, ping curto por 2s
+                const stunDuration = ping.duration > 2000 ? 4000 : 2000;
+                enemy.stun(stunDuration);
+            }
+        }
         if (isCircleIntersectingRect(ping, player)) { player.revealTime = Date.now() + ping.duration; }
         if (isCircleIntersectingRect(ping, heartOfLight)) { heartOfLight.reveal(); }
     }
@@ -1199,18 +1265,27 @@ function checkCollisionsAndReveal() {
     if (!window.DEV_MODE_INVINCIBLE) {
         if (Date.now() - player.spawnTime > 1000) {
             for (const enemy of enemies) {
-                if (player.isCollidingWith(enemy) && !player.deathState) {
+                // MODIFICADO: Inimigos atordoados não podem causar dano
+                if (!enemy.isStunned && player.isCollidingWith(enemy) && !player.deathState) {
                     gameRunning = false;
                     GameAudio.decreaseTension(0.1);
                     isChased = false;
                     player.isShaking = false;
-                    player.startDeathAnimation('enemy'); // MODIFICADO
+                    player.startDeathAnimation('enemy');
                     setTimeout(() => {
-                        showMessage("youWereHeardTitle", "youWereHeardText", "tryAgainButton", () => {
-                            player.resetDeathState();
-                            game.restartLevel();
+                        // MODIFICADO
+                        showMessage({
+                            titleKey: "youWereHeardTitle",
+                            textKey: "youWereHeardText",
+                            buttonKey: "tryAgainButton",
+                            callback: () => {
+                                player.resetDeathState();
+                                game.restartLevel();
+                            },
+                            iconClass: "fa-solid fa-ear-listen", // Ícone temático de "ouvir"
+                            iconColor: "var(--danger-glow)" // Cor de perigo
                         });
-                    }, 1500); // MODIFICADO
+                    }, 1500);
                     return;
                 }
             }
@@ -1221,13 +1296,21 @@ function checkCollisionsAndReveal() {
                 GameAudio.decreaseTension(0.1);
                 isChased = false;
                 player.isShaking = false;
-                player.startDeathAnimation('acid'); // MODIFICADO
+                player.startDeathAnimation('acid');
                 setTimeout(() => {
-                    showMessage("corrodedTitle", "corrodedText", "tryAgainButton", () => {
-                        player.resetDeathState();
-                        game.restartLevel();
+                    // MODIFICADO
+                    showMessage({
+                        titleKey: "corrodedTitle",
+                        textKey: "corrodedText",
+                        buttonKey: "tryAgainButton",
+                        callback: () => {
+                            player.resetDeathState();
+                            game.restartLevel();
+                        },
+                        iconClass: "fa-solid fa-biohazard", // Ícone de perigo biológico
+                        iconColor: "var(--danger-glow)" // Cor de perigo
                     });
-                }, 1500); // MODIFICADO
+                }, 1500);
                 return;
             }
         }
@@ -1343,41 +1426,142 @@ function updateHUD() {
     updateCoinHUD();
 }
 
-function showMessage(titleKey, textKey, buttonKey, callback, timeTaken) {
-    messageTitle.textContent = translations[currentLanguage][titleKey] || titleKey;
+// MODIFICADO: Sistema de Mensagens Refatorado
+function showMessage(options) {
+    const {
+        titleKey,
+        textKey,
+        buttonKey,
+        callback,
+        timeTaken,
+        isIntro = false,
+        customClass = '',
+        iconClass = 'fa-solid fa-circle-info',
+        iconColor = 'var(--cyan-glow)'
+    } = options;
 
-    let textContent = translations[currentLanguage][textKey] || textKey;
-    if (titleKey === 'victoryTitle' && timeTaken !== undefined) {
-        const minutes = Math.floor(timeTaken / 60);
-        const seconds = timeTaken % 60;
-        const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        textContent += ` ${translations[currentLanguage].victoryTime} ${timeString}`;
-    }
-    messageText.textContent = textContent;
-
+    const lang = translations[currentLanguage] || translations['pt'];
+    messageOverlay.innerHTML = '';
     messageOverlay.classList.add('visible');
-    const oldButton = document.getElementById('message-button');
-    const newButton = oldButton.cloneNode(true);
-    oldButton.parentNode.replaceChild(newButton, oldButton);
-    newButton.textContent = translations[currentLanguage][buttonKey] || buttonKey;
-    newButton.addEventListener('click', async () => {
+
+    const messageBox = document.createElement('div');
+    messageBox.className = 'message-box';
+    if (customClass) {
+        messageBox.classList.add(customClass);
+    }
+    
+    let finalHtml = '';
+
+    if (isIntro) {
+        messageBox.classList.add('intro-message');
+        finalHtml = `
+            <h1 id="message-title">${titleKey}</h1>
+            <div id="message-text">${textKey}</div>
+            <button id="message-button" class="message-button">${lang[buttonKey] || buttonKey}</button>
+        `;
+    } else {
+        let textContent = lang[textKey] || textKey || '';
+        if (titleKey === 'victoryTitle' && timeTaken !== undefined) {
+            const minutes = Math.floor(timeTaken / 60);
+            const seconds = timeTaken % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            textContent += ` ${lang.victoryTime || 'Seu tempo foi de'} ${timeString}`;
+        }
+
+        // Estrutura para os cards de mensagem (padrão e "continuar")
+        finalHtml = `
+            <div class="message-icon" style="color: ${iconColor}; text-shadow: 0 0 15px ${iconColor};">
+                <i class="${iconClass}"></i>
+            </div>
+            <h1 id="message-title">${lang[titleKey] || titleKey}</h1>
+            ${customClass === 'level-continue-box' ? '<div class="divider"></div>' : ''}
+            <p id="message-text">${textContent}</p>
+            <button id="message-button" class="message-button">${lang[buttonKey] || buttonKey}</button>
+        `;
+    }
+    
+    messageBox.innerHTML = finalHtml;
+    messageOverlay.appendChild(messageBox);
+
+    const messageButton = messageOverlay.querySelector('#message-button');
+    messageButton.addEventListener('click', async () => {
         await GameAudio.initAudio();
         messageOverlay.classList.remove('visible');
         if (callback) {
-            await callback();
-            // Se o callback resultou no menu principal ficando visível, inicia a música do menu
-            setTimeout(async () => {
-                if (mainMenu.classList.contains('visible') && typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
-                    await GameAudio.startMenuMusic();
-                }
-            }, 100);
+            callback();
         }
     }, { once: true });
 }
 
+
+// MODIFICADO: Função de Introdução de Nível Otimizada
 function showLevelIntro(level) {
-    const staticInstructions = currentLevelIndex === 0 ? translations[currentLanguage].levelIntroInstructions : "";
-    showMessage(`${translations[currentLanguage].hudLevel} ${currentLevelIndex + 1}: ${level.name}`, staticInstructions, "levelIntroButton", () => { gameRunning = true; });
+    const lang = translations[currentLanguage] || translations['pt'];
+    const title = `${lang.hudLevel || 'Nível'} ${currentLevelIndex + 1}: ${level.name}`;
+
+    // NOVO: Design moderno para os níveis 2 em diante
+    if (currentLevelIndex > 0) {
+        const proceedMessage = lang.levelIntroProceed || 'Continue sua jornada.';
+        showMessage({
+            titleKey: title,
+            textKey: proceedMessage,
+            buttonKey: "levelIntroButton",
+            callback: () => { gameRunning = true; },
+            iconClass: 'fa-solid fa-angles-right', // Ícone de "avançar"
+            customClass: 'level-continue-box' // Aplica o novo estilo CSS
+        });
+        return;
+    }
+
+    // Design detalhado e tutorial para o Nível 1 (mantido)
+    const k = (key) => `<span class="key-style">${key}</span>`;
+    const instructionsHtml = `
+        <div class="intro-columns-container">
+            <div class="intro-column">
+                <h3 class="column-title">Controles</h3>
+                <div class="instruction-item">
+                    <div class="instruction-keys">
+                        <span class="instruction-icon"><i class="fa-solid fa-arrows-left-right"></i></span>
+                        <span>${k('A')} / ${k('D')}</span>
+                    </div>
+                    <span class="instruction-desc">Para Mover</span>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-keys">
+                         <span class="instruction-icon"><i class="fa-solid fa-arrow-up-from-bracket"></i></span>
+                         <span>${k('Espaço')} ou ${k('W')}</span>
+                    </div>
+                    <span class="instruction-desc">Para Pular</span>
+                </div>
+                <div class="instruction-item">
+                    <div class="instruction-keys">
+                        <span class="instruction-icon"><i class="fa-solid fa-satellite-dish"></i></span>
+                        <span>${k('Q')} / ${k('E')}</span>
+                    </div>
+                    <span class="instruction-desc">Para Usar o Ping</span>
+                </div>
+            </div>
+            <div class="intro-column">
+                <h3 class="column-title">Objetivos</h3>
+                <div class="instruction-item">
+                     <span class="instruction-icon" style="font-size: 1.8em;"><i class="fa-solid fa-heart-pulse"></i></span>
+                    <span>Encontre o <strong>Coração de Luz</strong> para escapar.</span>
+                </div>
+                <div class="instruction-item">
+                    <span class="instruction-icon" style="font-size: 1.8em;"><i class="fa-solid fa-triangle-exclamation"></i></span>
+                    <span>Cuidado com os <strong>Inimigos</strong> atraídos pelo som.</span>
+                </div>
+            </div>
+        </div>
+    `;
+
+    showMessage({
+        titleKey: title,
+        textKey: instructionsHtml,
+        buttonKey: "levelIntroButton",
+        callback: () => { gameRunning = true; },
+        isIntro: true 
+    });
 }
 
 function formatTime(ms) {
@@ -1571,7 +1755,7 @@ async function updateGlitchBgVisibility() {
                 await GameAudio.startMenuMusic(); // Inicia a música do menu
             }
         }
-        // Não para a música do menu quando ele fica invisível - isso é controlado manualmente
+        // Não para a música do menu quando ele fica invisível - isso é controlado manually
     }
 }
 
