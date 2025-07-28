@@ -87,6 +87,7 @@ const hud = document.getElementById('hud');
 const cooldownsHud = document.getElementById('cooldowns-hud');
 const qCooldownFill = document.getElementById('q-cooldown-fill');
 const eCooldownFill = document.getElementById('e-cooldown-fill');
+const cCooldownFill = document.getElementById('c-cooldown-fill');
 const messageOverlay = document.getElementById('message-overlay');
 const messageTitle = document.getElementById('message-title');
 const messageText = document.getElementById('message-text');
@@ -123,7 +124,6 @@ let pendingSlotId = null;
 const TOTAL_SLOTS = 5;
 let gameContextLoaded = false;
 
-// Função para verificar se o premium está desbloqueado
 function isPremiumUnlocked() {
     return localStorage.getItem('eco_premium_unlocked') === 'true';
 }
@@ -147,7 +147,6 @@ function createNewSave(slotId, saveName) {
     localStorage.setItem(getSaveSlotKey(slotId), JSON.stringify(newSaveObject));
     loadGameState(slotId);
 
-    // Envia webhook para criação de save
     const embed = createWebhookEmbed(
         '🎮 Novo Save Criado',
         `Um jogador criou um novo save no jogo!`,
@@ -383,6 +382,7 @@ window.addEventListener('keydown', (e) => {
         case 'w': case 'arrowup': case ' ': if (!keys.space.pressed) { player.jump(); keys.space.pressed = true; } break;
         case 'q': player.createPing('short'); break;
         case 'e': player.createPing('long'); break;
+        case 'c': player.fireProjectile(); break;
         case 'escape': togglePause(); break;
     }
 });
@@ -412,17 +412,26 @@ enemySprite.src = 'assets/inimigo1.png';
 let enemySpriteLoaded = false;
 enemySprite.onload = () => { enemySpriteLoaded = true; };
 
-// Adicionando o segundo sprite do inimigo
 const enemySprite2 = new window.Image();
 enemySprite2.src = 'assets/inimigo2.png';
 let enemySprite2Loaded = false;
 enemySprite2.onload = () => { enemySprite2Loaded = true; };
 
-// NOVO: Adicionando o sprite do inimigo atordoado
 const enemyStunSprite = new window.Image();
 enemyStunSprite.src = 'assets/inimigo1.png';
 let enemyStunSpriteLoaded = false;
 enemyStunSprite.onload = () => { enemyStunSpriteLoaded = true; };
+
+const projectileSprite1 = new window.Image();
+projectileSprite1.src = 'assets/disparo1.png';
+let projectileSprite1Loaded = false;
+projectileSprite1.onload = () => { projectileSprite1Loaded = true; };
+
+const projectileSprite2 = new window.Image();
+projectileSprite2.src = 'assets/disparo2.png';
+let projectileSprite2Loaded = false;
+projectileSprite2.onload = () => { projectileSprite2Loaded = true; };
+
 
 const deathSprites = [];
 const deathSpriteUrls = [
@@ -444,18 +453,18 @@ deathSpriteUrls.forEach((url, index) => {
 setTimeout(() => {
     if (!playerSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do personagem.'); }
     if (!enemySpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo.'); }
-    // NOVO: Verificação do sprite de atordoamento
     if (!enemyStunSpriteLoaded) { console.log('Atenção: Não foi possível carregar o sprite do inimigo atordoado.'); }
+    if (!projectileSprite1Loaded || !projectileSprite2Loaded) { console.log('Atenção: Não foi possível carregar os sprites do projétil.'); }
 }, 2000);
 
 class DeathParticle {
     constructor(x, y, color) {
         const angle = Math.random() * Math.PI * 2;
-        const speed = Math.random() * 4 + 1; // Maior velocidade para um efeito mais explosivo
+        const speed = Math.random() * 4 + 1;
         this.x = x;
         this.y = y;
         this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed - 2; // Impulso inicial para cima
+        this.vy = Math.sin(angle) * speed - 2;
         this.lifespan = 80 + Math.random() * 50;
         this.life = this.lifespan;
         this.size = Math.random() * 3 + 2;
@@ -485,12 +494,95 @@ class DeathParticle {
     }
 }
 
+class OrbParticle {
+    constructor(x, y) {
+        const angle = Math.random() * Math.PI * 2;
+        // VALOR DA VELOCIDADE ALTERADO (original era Math.random() * 5 + 2)
+        const speed = Math.random() * 2 + 1; // Partículas mais lentas
+        this.x = x;
+        this.y = y;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.lifespan = 1000 + Math.random() * 500; 
+        this.life = this.lifespan;
+        this.size = Math.random() * 3 + 1;
+        this.alpha = 1;
+        // COR ALTERADA para ciano
+        this.color = 'rgba(0, 255, 255, 1)'; 
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.life -= 16; 
+        this.alpha = Math.max(0, this.life / this.lifespan);
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        // Sombra também alterada para ciano
+        ctx.shadowColor = '#00ffff'; 
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+
+class Projectile {
+    constructor(x, y, facing) {
+        this.width = 20;
+        this.height = 20;
+        this.position = { x: x, y: y };
+        this.speed = 4;
+        this.velocity = { x: this.speed * (facing === 'right' ? 1 : -1), y: 0 };
+        this.active = true;
+        this.animationFrame = 0;
+        this.lastFrameChange = Date.now();
+        this.frameInterval = 100;
+    }
+
+    update() {
+        this.position.x += this.velocity.x;
+
+        if (Date.now() - this.lastFrameChange > this.frameInterval) {
+            this.animationFrame = (this.animationFrame + 1) % 2;
+            this.lastFrameChange = Date.now();
+        }
+
+        if (this.position.x > canvas.width || this.position.x < 0) {
+            this.active = false;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        let spriteToDraw = this.animationFrame === 0 ? projectileSprite1 : projectileSprite2;
+        let spriteLoaded = this.animationFrame === 0 ? projectileSprite1Loaded : projectileSprite2Loaded;
+
+        if (spriteLoaded) {
+            ctx.drawImage(spriteToDraw, this.position.x, this.position.y, this.width, this.height);
+        } else {
+            ctx.fillStyle = 'cyan';
+            ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
+        }
+        ctx.restore();
+    }
+}
+
+
 class Player {
     constructor() {
         this.width = 40; this.height = 50; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
         this.baseSpeed = 2;
         this.baseJumpForce = 12; this.baseShortPingCooldown = 500; this.baseLongPingCooldown = 3000;
-        this.onGround = false; this.lastShortPing = 0; this.lastLongPing = 0; this.stepSoundInterval = 250;
+        this.baseProjectileCooldown = 1000;
+        this.onGround = false; this.lastShortPing = 0; this.lastLongPing = 0; this.lastProjectileTime = 0;
+        this.stepSoundInterval = 250;
         this.lastStepTime = 0; this.lastY = this.position.y; this.revealTime = 0; this.finalAnimationState = null;
         this.spawnTime = 0; this.breathOffset = 0;
         this.facing = 'right';
@@ -504,6 +596,7 @@ class Player {
         this.jumpForce = this.baseJumpForce + ((upgradesState.jump || 0) * 2);
         this.shortPingCooldown = this.baseShortPingCooldown - ((upgradesState.shortPing || 0) * 100);
         this.longPingCooldown = this.baseLongPingCooldown - ((upgradesState.longPing || 0) * 250);
+        this.projectileCooldown = this.baseProjectileCooldown;
     }
     reset(x, y) {
         this.position = { x, y };
@@ -516,8 +609,6 @@ class Player {
     }
     draw() {
         if (this.finalAnimationState) { this.drawWinAnimation(); return; }
-        // A lógica de desenho da morte foi movida para drawDeathAnimation
-        // para ser chamada separadamente no loop de animação.
         if (this.deathState) return;
 
 
@@ -673,7 +764,7 @@ class Player {
         gradient.addColorStop(0, 'rgba(0,0,0,0)');
         gradient.addColorStop(1, `rgba(0,0,0,${vignetteOpacity})`);
         ctx.fillStyle = gradient;
-        ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2); // fill entire screen despite shake
+        ctx.fillRect(-canvas.width, -canvas.height, canvas.width * 2, canvas.height * 2);
 
         ctx.globalCompositeOperation = 'saturation';
         ctx.fillStyle = `hsl(0, 0%, ${100 - (progress * 100)}%)`;
@@ -690,7 +781,7 @@ class Player {
                 p.draw(ctx);
             });
         } else {
-            this.draw(); // Draw the player normally before shattering
+            this.draw();
         }
     }
 
@@ -725,10 +816,16 @@ class Player {
             pings.push(new Ping(center.x, center.y, radius, 4000, 'rgba(255, 255, 255, 1)', 6, 40));
             createNoise(center.x, center.y, radius * 2.5, 1.0);
             GameAudio.sounds.longPing.triggerAttackRelease("C3", "0.5s");
-            const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
-            if (distanceToPlayer < 400) {
-                this.state = 'chasing';
-            }
+        }
+    }
+
+    fireProjectile() {
+        const now = Date.now();
+        if (now - this.lastProjectileTime > this.projectileCooldown) {
+            this.lastProjectileTime = now;
+            const projectileX = this.facing === 'right' ? this.position.x + this.width : this.position.x;
+            const projectileY = this.position.y + this.height / 2 - 10;
+            projectiles.push(new Projectile(projectileX, projectileY, this.facing));
         }
     }
 }
@@ -786,12 +883,14 @@ class Enemy {
         // Propriedades de atordoamento
         this.isStunned = false;
         this.stunnedUntil = 0;
+        // Propriedade para controlar a patrulha durante a perseguição
+        this.chasePatrolDirection = null; // <-- ADICIONE ESTA LINHA
     }
 
     stun(duration) {
         this.isStunned = true;
         this.stunnedUntil = Date.now() + duration;
-        this.velocity.x = 0; // Para o movimento imediatamente
+        this.velocity.x = 0;
     }
 
     reset() {
@@ -802,12 +901,12 @@ class Enemy {
         this.chaseStartTime = null;
         this.isStunned = false;
         this.stunnedUntil = 0;
+        this.chasePatrolDirection = null; // <-- ADICIONE ESTA LINHA
     }
 
     draw(player) {
         const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
-        
-        // A condição para desenhar o inimigo: estar atordoado, ou ter sido revelado, ou o jogador estar perto.
+
         if (this.isStunned || Date.now() < this.revealTime || distanceToPlayer < 150 || window.DEV_MODE_REVEAL_MAP) {
             ctx.save();
 
@@ -873,18 +972,13 @@ class Enemy {
         this.revealTime = Date.now() + 2000;
     }
 
-    // =============================================================
-    // MÉTODO UPDATE COM A FÍSICA CORRIGIDA PARA O ESTADO ATORDOADO
-    // =============================================================
     update(player, platforms, noises) {
         if (this.isStunned && Date.now() < this.stunnedUntil) {
-            // LÓGICA DO ESTADO ATORDOADO COM FÍSICA COMPLETA
             this.velocity.x = 0;
             this.onGround = false;
             this.velocity.y += GRAVITY;
             this.position.y += this.velocity.y;
 
-            // FÍSICA DE COLISÃO VERTICAL (copiada do estado normal para garantir consistência)
             for (const platform of platforms) {
                 if (this.position.y + this.height <= platform.position.y && this.position.y + this.height + this.velocity.y >= platform.position.y && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
                     this.velocity.y = 0;
@@ -892,7 +986,6 @@ class Enemy {
                     this.position.y = platform.position.y - this.height;
                 }
             }
-            // Checagem de segurança de colisão (também copiada do estado normal)
             for (const platform of platforms) {
                 if (Math.abs(this.position.y + this.height - platform.position.y) < 2 && this.position.x + this.width > platform.position.x && this.position.x < platform.position.x + platform.width) {
                     this.velocity.y = 0;
@@ -900,17 +993,16 @@ class Enemy {
                     this.position.y = platform.position.y - this.height;
                 }
             }
-            return; // Pula o resto da lógica de movimento e IA.
+            return;
         }
 
         this.isStunned = false;
 
-        // --- LÓGICA DE ATUALIZAÇÃO NORMAL ---
         if (Date.now() - this.lastFrameChange > this.frameInterval) {
             this.animationFrame = (this.animationFrame + 1) % 2;
             this.lastFrameChange = Date.now();
         }
-        
+
         this.onGround = false;
         this.velocity.y += GRAVITY;
         this.position.y += this.velocity.y;
@@ -939,7 +1031,7 @@ class Enemy {
                 this.position.y = platform.position.y - this.height;
             }
         }
-        
+
         this.handleAI(player, platforms, noises);
     }
 
@@ -951,6 +1043,7 @@ class Enemy {
     }
 
     handleAI(player, platforms, noises) {
+        // Lógica de detecção de ruído e jogador (permanece a mesma)
         for (const noise of noises) {
             const distance = Math.hypot(this.position.x - noise.x, this.position.y - noise.y);
             if (distance < noise.radius * noise.intensity) {
@@ -964,52 +1057,42 @@ class Enemy {
         }
 
         const distanceToPlayer = Math.hypot(this.position.x - player.position.x, this.position.y - player.position.y);
-        if (distanceToPlayer < 200) {
-            if (this.state !== 'chasing') {
-                this.chaseStartTime = Date.now();
-                GameAudio.increaseTension();
-                isChased = true;
-                if (player) player.isShaking = true;
-            }
+        const isPlayerMoving = player.velocity.x !== 0 || !player.onGround;
+
+        if (this.state !== 'chasing' && distanceToPlayer < 200 && isPlayerMoving) {
+            this.chaseStartTime = Date.now();
+            GameAudio.increaseTension();
+            isChased = true;
+            if (player) player.isShaking = true;
             this.state = 'chasing';
-            this.target = player.position;
-        }
-        if (distanceToPlayer > 400) {
-            if (this.state == 'chasing') {
-                GameAudio.decreaseTension();
-                isChased = false;
-                if (player) player.isShaking = false;
-            }
-            this.state = 'patrol';
         }
 
-        if (this.state === 'patrol' && this.onGround) {
-            const lookAheadX = this.velocity.x > 0 ? this.position.x + this.width : this.position.x - 1;
-            const groundCheckY = this.position.y + this.height + 5;
-            let groundAhead = false;
-            for (const platform of platforms) {
-                if (lookAheadX >= platform.position.x && lookAheadX <= platform.position.x + platform.width && groundCheckY >= platform.position.y && groundCheckY <= platform.position.y + platform.height) {
-                    groundAhead = true;
-                    break;
-                }
-            }
-            if (!groundAhead) {
-                this.velocity.x *= -1;
-            }
+        if (this.state === 'chasing' && distanceToPlayer > 400) {
+            GameAudio.decreaseTension();
+            isChased = false;
+            if (player) player.isShaking = false;
+            this.state = 'patrol';
+            this.chasePatrolDirection = null; 
         }
+        
+        if (this.state === 'chasing') {
+            this.target = player.position;
+        }
+        
+        let desiredVelocityX = this.velocity.x;
+        const verticalDistance = this.position.y - player.position.y;
+        const isPlayerUnreachable = verticalDistance > this.height;
+
         switch (this.state) {
             case 'patrol':
-                this.velocity.x = this.speed * Math.sign(this.velocity.x || 1);
-                if (this.velocity.x > 0) this.facing = 'right';
-                else if (this.velocity.x < 0) this.facing = 'left';
+                this.chasePatrolDirection = null;
+                desiredVelocityX = this.speed * Math.sign(this.velocity.x || 1);
                 break;
 
             case 'investigating':
+                this.chasePatrolDirection = null;
                 if (!this.target) { this.state = 'patrol'; return; }
-                this.velocity.x = this.speed * 1.5 * Math.sign(this.target.x - this.position.x);
-                if (this.velocity.x > 0) this.facing = 'right';
-                else if (this.velocity.x < 0) this.facing = 'left';
-
+                desiredVelocityX = this.speed * 1.5 * Math.sign(this.target.x - this.position.x);
                 if (Math.abs(this.position.x - this.target.x) < 10) {
                     this.state = 'patrol';
                     this.target = null;
@@ -1017,14 +1100,33 @@ class Enemy {
                 break;
 
             case 'chasing':
-                if (!this.target) {
-                    this.state = 'patrol';
-                    return;
-                }
-                this.velocity.x = this.speed * 2 * Math.sign(this.target.x - this.position.x);
+                if (!this.target) { this.state = 'patrol'; return; }
+                
+                // --- VELOCIDADE DE PERSEGUIÇÃO AJUSTADA AQUI ---
+                const chaseSpeed = this.speed * 1.6; // Era 2, agora é 1.6 (60% mais rápido que o normal)
 
-                if (this.velocity.x > 0) this.facing = 'right';
-                else if (this.velocity.x < 0) this.facing = 'left';
+                if (isPlayerUnreachable) {
+                    const patrolCenter = this.target.x;
+                    const patrolRange = 120;
+                    const leftBound = patrolCenter - patrolRange / 2;
+                    const rightBound = patrolCenter + patrolRange / 2;
+
+                    if (this.chasePatrolDirection === null) {
+                        this.chasePatrolDirection = Math.sign(this.target.x - this.position.x) || 1;
+                    }
+
+                    if (this.position.x > rightBound && this.chasePatrolDirection === 1) {
+                        this.chasePatrolDirection = -1;
+                    } else if (this.position.x < leftBound && this.chasePatrolDirection === -1) {
+                        this.chasePatrolDirection = 1;
+                    }
+                    
+                    desiredVelocityX = chaseSpeed * this.chasePatrolDirection;
+
+                } else {
+                    this.chasePatrolDirection = null;
+                    desiredVelocityX = chaseSpeed * Math.sign(this.target.x - this.position.x);
+                }
 
                 const chaseTimeElapsed = Date.now() - this.chaseStartTime;
                 if (chaseTimeElapsed > this.chaseDuration) {
@@ -1037,6 +1139,38 @@ class Enemy {
                 }
                 break;
         }
+
+        // --- LÓGICA DE EXECUÇÃO E VERIFICAÇÃO DE BORDA ---
+        if (this.onGround) {
+            const moveDirection = Math.sign(desiredVelocityX || this.velocity.x || 1);
+            const lookAheadX = this.position.x + (moveDirection * this.width);
+            const groundCheckY = this.position.y + this.height + 5;
+            let groundAhead = false;
+
+            for (const platform of platforms) {
+                if (lookAheadX >= platform.position.x && lookAheadX <= platform.position.x + platform.width && groundCheckY >= platform.position.y && groundCheckY <= platform.position.y + platform.height) {
+                    groundAhead = true;
+                    break;
+                }
+            }
+
+            if (groundAhead) {
+                this.velocity.x = desiredVelocityX;
+            } else {
+                this.velocity.x *= -1;
+                if(this.chasePatrolDirection !== null) {
+                    this.chasePatrolDirection *= -1;
+                }
+                if (this.velocity.x === 0) {
+                    this.velocity.x = -this.speed * moveDirection;
+                }
+            }
+        } else {
+            this.velocity.x = desiredVelocityX;
+        }
+        
+        if (this.velocity.x > 0) this.facing = 'right';
+        else if (this.velocity.x < 0) this.facing = 'left';
     }
 }
 class RevealedObject { constructor(platform, duration) { this.platform = platform; this.revealTime = Date.now(); this.duration = duration; } draw() { const elapsed = Date.now() - this.revealTime; if (elapsed > this.duration) return false; const alpha = 1 - (elapsed / this.duration); this.platform.draw(alpha); return true; } }
@@ -1077,13 +1211,30 @@ class HeartOfLight {
         this.isAbsorbed = true;
         isLevelEnding = true;
         gameRunning = false;
+        
+        const centerX = this.position.x + this.width / 2;
+        const centerY = this.position.y + this.height / 2;
+
+        // 1. Explosão de Partículas
+        for (let i = 0; i < 100; i++) {
+            levelEndParticles.push(new OrbParticle(centerX, centerY));
+        }
+
+        // 2. Revelação do Mapa
+        game.level.platforms.forEach(platform => {
+            if (!revealedObjects.some(ro => ro.platform === platform)) {
+                revealedObjects.push(new RevealedObject(platform, 2000));
+            }
+        });
+        
+        // 3. Animação de Ping Existente
         GameAudio.sounds.levelWinExplosion.triggerAttackRelease("2n");
-        pings.push(new Ping(this.position.x + this.width / 2, this.position.y + this.height / 2, canvas.width * 1.5, 1500, 'rgba(255, 255, 255, 0.9)', 25, 0));
+        pings.push(new Ping(centerX, centerY, canvas.width * 1.5, 1500, 'rgba(255, 255, 255, 0.9)', 25, 0));
+        
         setTimeout(() => {
             GameAudio.sounds.levelWin.triggerAttackRelease("C5", "0.5s");
             currentLevelIndex++;
             saveGameState();
-            // MODIFICADO
             showMessage({
                 titleKey: "levelCompleteTitle",
                 textKey: "levelCompleteText",
@@ -1092,7 +1243,7 @@ class HeartOfLight {
                     isLevelEnding = false;
                     game.loadLevel(currentLevelIndex);
                 },
-                iconClass: "fa-solid fa-circle-check" // Ícone de sucesso
+                iconClass: "fa-solid fa-circle-check"
             });
         }, 1500);
     }
@@ -1112,23 +1263,32 @@ function updateCoinHUD() {
     if (coinCountCenter) coinCountCenter.textContent = totalCoins;
 }
 
-let player, pings, enemies, revealedObjects, noises, heartOfLight;
+let player, pings, enemies, revealedObjects, noises, heartOfLight, projectiles, levelEndParticles;
 const game = {
     level: null,
     loadLevel: function (levelIndex) {
         if (levelIndex >= levels.length) { this.winGame(); return; }
 
-        // Para a música do menu quando um nível for carregado
+        isChased = false;
+        chaseVignetteOpacity = 0;
+        if (typeof GameAudio !== 'undefined' && GameAudio.decreaseTension) {
+            GameAudio.decreaseTension();
+        }
+
         if (typeof GameAudio !== 'undefined' && GameAudio.stopMenuMusic) {
             GameAudio.stopMenuMusic();
         }
 
         this.level = { ...levels[levelIndex] };
-        player = new Player(); player.reset(this.level.playerStart.x, this.level.playerStart.y);
+        player = new Player();
+        player.reset(this.level.playerStart.x, this.level.playerStart.y);
+        player.isShaking = false;
+
         enemies = this.level.enemies.map(e => new Enemy(e.x, e.y));
         heartOfLight = new HeartOfLight(this.level.exit.x, this.level.exit.y, this.level.exit.width, this.level.exit.height);
-        pings = []; revealedObjects = []; noises = [];
+        pings = []; revealedObjects = []; noises = []; projectiles = []; levelEndParticles = [];
         coins = this.level.coins.map(c => { const coin = Object.assign(Object.create(Object.getPrototypeOf(c)), c); const coinId = getCoinId(levelIndex, coin); if (collectedCoins.includes(coinId)) coin.collected = true; return coin; });
+
         showLevelIntro(this.level);
         updateCoinHUD();
         updateHUD();
@@ -1137,7 +1297,7 @@ const game = {
         loadGameState(currentSlotId);
         player.reset(this.level.playerStart.x, this.level.playerStart.y);
         enemies.forEach(e => e.reset());
-        pings = []; revealedObjects = []; noises = [];
+        pings = []; revealedObjects = []; noises = []; projectiles = []; levelEndParticles = [];
         heartOfLight = new HeartOfLight(this.level.exit.x, this.level.exit.y, this.level.exit.width, this.level.exit.height);
         coins = this.level.coins.map(c => { const coin = Object.assign(Object.create(Object.getPrototypeOf(c)), c); const coinId = getCoinId(currentLevelIndex, coin); if (collectedCoins.includes(coinId)) coin.collected = true; return coin; });
         gameRunning = true;
@@ -1153,7 +1313,6 @@ const game = {
         const endTime = Date.now();
         const timeTaken = gameStartTime ? Math.round((endTime - gameStartTime) / 1000) : 0;
 
-        // Envia webhook para zerar o jogo
         const saveData = currentSlotId ? JSON.parse(localStorage.getItem(getSaveSlotKey(currentSlotId)) || '{}') : {};
         const saveName = saveData.saveName || 'Save Desconhecido';
         const minutes = Math.floor(timeTaken / 60);
@@ -1210,7 +1369,6 @@ const game = {
                 setTimeout(async () => {
                     isGameEnding = false;
                     player.finalAnimationState = null;
-                    // MODIFICADO
                     showMessage({
                         titleKey: "victoryTitle",
                         textKey: "victoryText",
@@ -1226,8 +1384,8 @@ const game = {
                             }
                         },
                         timeTaken: anim.timeTaken,
-                        iconClass: "fa-solid fa-trophy", // Ícone de troféu
-                        iconColor: "var(--gold-glow)" // Cor dourada
+                        iconClass: "fa-solid fa-trophy",
+                        iconColor: "var(--gold-glow)"
                     });
                 }, 1000);
             }
@@ -1252,8 +1410,6 @@ function checkCollisionsAndReveal() {
         for (const enemy of enemies) {
             if (isCircleIntersectingRect(ping, enemy)) {
                 enemy.reveal();
-                // NOVO: Atordoa o inimigo ao ser atingido por um ping
-                // Ping longo (duração > 2000ms) atordoa por 4s, ping curto por 2s
                 const stunDuration = ping.duration > 2000 ? 4000 : 2000;
                 enemy.stun(stunDuration);
             }
@@ -1262,10 +1418,19 @@ function checkCollisionsAndReveal() {
         if (isCircleIntersectingRect(ping, heartOfLight)) { heartOfLight.reveal(); }
     }
 
+    for (const projectile of projectiles) {
+        for (const enemy of enemies) {
+            if (projectile.active && !enemy.isStunned && isRectIntersectingRect(projectile, enemy)) {
+                enemy.stun(3000);
+                projectile.active = false;
+            }
+        }
+    }
+
+
     if (!window.DEV_MODE_INVINCIBLE) {
         if (Date.now() - player.spawnTime > 1000) {
             for (const enemy of enemies) {
-                // MODIFICADO: Inimigos atordoados não podem causar dano
                 if (!enemy.isStunned && player.isCollidingWith(enemy) && !player.deathState) {
                     gameRunning = false;
                     GameAudio.decreaseTension(0.1);
@@ -1273,7 +1438,6 @@ function checkCollisionsAndReveal() {
                     player.isShaking = false;
                     player.startDeathAnimation('enemy');
                     setTimeout(() => {
-                        // MODIFICADO
                         showMessage({
                             titleKey: "youWereHeardTitle",
                             textKey: "youWereHeardText",
@@ -1282,8 +1446,8 @@ function checkCollisionsAndReveal() {
                                 player.resetDeathState();
                                 game.restartLevel();
                             },
-                            iconClass: "fa-solid fa-ear-listen", // Ícone temático de "ouvir"
-                            iconColor: "var(--danger-glow)" // Cor de perigo
+                            iconClass: "fa-solid fa-ear-listen",
+                            iconColor: "var(--danger-glow)"
                         });
                     }, 1500);
                     return;
@@ -1298,7 +1462,6 @@ function checkCollisionsAndReveal() {
                 player.isShaking = false;
                 player.startDeathAnimation('acid');
                 setTimeout(() => {
-                    // MODIFICADO
                     showMessage({
                         titleKey: "corrodedTitle",
                         textKey: "corrodedText",
@@ -1307,8 +1470,8 @@ function checkCollisionsAndReveal() {
                             player.resetDeathState();
                             game.restartLevel();
                         },
-                        iconClass: "fa-solid fa-biohazard", // Ícone de perigo biológico
-                        iconColor: "var(--danger-glow)" // Cor de perigo
+                        iconClass: "fa-solid fa-biohazard",
+                        iconColor: "var(--danger-glow)"
                     });
                 }, 1500);
                 return;
@@ -1329,6 +1492,13 @@ function checkCollisionsAndReveal() {
 }
 
 function isCircleIntersectingRect(circle, rect) { const distX = Math.abs(circle.position.x - rect.position.x - rect.width / 2); const distY = Math.abs(circle.position.y - rect.position.y - rect.height / 2); if (distX > (rect.width / 2 + circle.radius) || distY > (rect.height / 2 + circle.radius)) return false; if (distX <= (rect.width / 2) || distY <= (rect.height / 2)) return true; const dx = distX - rect.width / 2; const dy = distY - rect.height / 2; return (dx * dx + dy * dy <= (circle.radius * circle.radius)); }
+function isRectIntersectingRect(rect1, rect2) {
+    return rect1.position.x < rect2.position.x + rect2.width &&
+           rect1.position.x + rect1.width > rect2.position.x &&
+           rect1.position.y < rect2.position.y + rect2.height &&
+           rect1.position.y + rect1.height > rect2.position.y;
+}
+
 
 function animate() {
     requestAnimationFrame(animate);
@@ -1337,8 +1507,6 @@ function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (player && player.deathState) {
-        // A lógica de renderização normal é pausada
-        // Apenas a animação de morte é desenhada.
         if (game.level) {
             if (window.DEV_MODE_REVEAL_MAP) {
                 game.level.platforms.forEach(p => p.draw(1));
@@ -1353,7 +1521,6 @@ function animate() {
         }
         player.drawDeathAnimation(ctx);
     } else {
-        // Lógica de renderização normal do jogo
         if (isGameEnding && player && player.finalAnimationState) {
             player.draw();
         } else if (game.level) {
@@ -1366,6 +1533,21 @@ function animate() {
             game.level.acid.forEach(a => a.draw());
             heartOfLight.draw();
             coins.forEach(c => c.draw());
+
+            if (projectiles) {
+                projectiles.forEach(p => p.draw());
+            }
+            
+            // Desenhar partículas de fim de nível
+            if (levelEndParticles) {
+                levelEndParticles.forEach((p, index) => {
+                    p.update();
+                    p.draw(ctx);
+                    if (p.alpha <= 0) {
+                        levelEndParticles.splice(index, 1);
+                    }
+                });
+            }
 
             if (player) {
                 player.draw();
@@ -1398,14 +1580,16 @@ function animate() {
 
     ctx.restore();
 
-    // Lógica de atualização do jogo (não-renderização)
     if (pings) pings = pings.filter(p => p.active);
     if (noises) noises = noises.filter(n => Date.now() - n.creationTime < 100);
+    if (projectiles) projectiles = projectiles.filter(p => p.active);
+
 
     if (gameRunning && player) {
         player.update(game.level.platforms, game.level.water);
         enemies.forEach(e => e.update(player, game.level.platforms, noises));
         pings.forEach(p => p.update());
+        projectiles.forEach(p => p.update());
         checkCollisionsAndReveal();
         updateHUD();
     }
@@ -1423,10 +1607,12 @@ function updateHUD() {
     if (player && eCooldownFill) {
         eCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastLongPing) / player.longPingCooldown) * 100)}%`;
     }
+    if (player && cCooldownFill) {
+        cCooldownFill.style.width = `${Math.min(100, ((Date.now() - player.lastProjectileTime) / player.projectileCooldown) * 100)}%`;
+    }
     updateCoinHUD();
 }
 
-// MODIFICADO: Sistema de Mensagens Refatorado
 function showMessage(options) {
     const {
         titleKey,
@@ -1468,7 +1654,6 @@ function showMessage(options) {
             textContent += ` ${lang.victoryTime || 'Seu tempo foi de'} ${timeString}`;
         }
 
-        // Estrutura para os cards de mensagem (padrão e "continuar")
         finalHtml = `
             <div class="message-icon" style="color: ${iconColor}; text-shadow: 0 0 15px ${iconColor};">
                 <i class="${iconClass}"></i>
@@ -1494,12 +1679,10 @@ function showMessage(options) {
 }
 
 
-// MODIFICADO: Função de Introdução de Nível Otimizada
 function showLevelIntro(level) {
     const lang = translations[currentLanguage] || translations['pt'];
     const title = `${lang.hudLevel || 'Nível'} ${currentLevelIndex + 1}: ${level.name}`;
 
-    // NOVO: Design moderno para os níveis 2 em diante
     if (currentLevelIndex > 0) {
         const proceedMessage = lang.levelIntroProceed || 'Continue sua jornada.';
         showMessage({
@@ -1507,13 +1690,12 @@ function showLevelIntro(level) {
             textKey: proceedMessage,
             buttonKey: "levelIntroButton",
             callback: () => { gameRunning = true; },
-            iconClass: 'fa-solid fa-angles-right', // Ícone de "avançar"
-            customClass: 'level-continue-box' // Aplica o novo estilo CSS
+            iconClass: 'fa-solid fa-angles-right',
+            customClass: 'level-continue-box'
         });
         return;
     }
 
-    // Design detalhado e tutorial para o Nível 1 (mantido)
     const k = (key) => `<span class="key-style">${key}</span>`;
     const instructionsHtml = `
         <div class="intro-columns-container">
@@ -1536,9 +1718,9 @@ function showLevelIntro(level) {
                 <div class="instruction-item">
                     <div class="instruction-keys">
                         <span class="instruction-icon"><i class="fa-solid fa-satellite-dish"></i></span>
-                        <span>${k('Q')} / ${k('E')}</span>
+                        <span>${k('Q')} / ${k('E')} / ${k('C')}</span>
                     </div>
-                    <span class="instruction-desc">Para Usar o Ping</span>
+                    <span class="instruction-desc">Para Usar Habilidades</span>
                 </div>
             </div>
             <div class="intro-column">
@@ -1560,7 +1742,7 @@ function showLevelIntro(level) {
         textKey: instructionsHtml,
         buttonKey: "levelIntroButton",
         callback: () => { gameRunning = true; },
-        isIntro: true 
+        isIntro: true
     });
 }
 
@@ -1628,7 +1810,6 @@ function createWebhookEmbed(title, description, color = 0x00ffff, fields = []) {
 }
 
 // --- INICIALIZAÇÃO DO ÁUDIO ---
-// Inicializa o áudio na primeira interação do usuário
 let audioInitialized = false;
 function initializeAudioOnFirstInteraction() {
     if (!audioInitialized && typeof GameAudio !== 'undefined') {
@@ -1639,7 +1820,6 @@ function initializeAudioOnFirstInteraction() {
     }
 }
 
-// Adiciona listeners para inicializar o áudio
 document.addEventListener('click', initializeAudioOnFirstInteraction, { once: true });
 document.addEventListener('keydown', initializeAudioOnFirstInteraction, { once: true });
 document.addEventListener('touchstart', initializeAudioOnFirstInteraction, { once: true });
@@ -1649,23 +1829,19 @@ document.addEventListener('touchstart', initializeAudioOnFirstInteraction, { onc
 startGameButton.addEventListener('click', async () => {
     console.log('🎮 Botão Iniciar Aventura clicado');
 
-    // Para a música do menu antes de iniciar o jogo
     if (typeof GameAudio !== 'undefined' && GameAudio.stopMenuMusic) {
         GameAudio.stopMenuMusic();
     }
 
-    // Esconde o menu e mostra os elementos do jogo
     mainMenu.classList.remove('visible');
     hud.classList.add('visible');
     cooldownsHud.classList.add('visible');
     document.getElementById('coin-hud').classList.add('visible');
 
-    // Esconde o glitch-bg
     glitchBg.style.display = 'none';
 
     if (!gameStartTime) gameStartTime = Date.now();
 
-    // Inicia a música do jogo
     console.log('🎵 Chamando startAmbientMusic...');
     await GameAudio.startAmbientMusic();
     game.loadLevel(currentLevelIndex);
@@ -1719,7 +1895,6 @@ backToMainMenuButton.addEventListener('click', async () => {
     cooldownsHud.classList.remove('visible');
     document.getElementById('coin-hud').classList.remove('visible');
 
-    // Inicia a música do menu quando voltar
     if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
         await GameAudio.startMenuMusic();
     }
@@ -1744,18 +1919,15 @@ async function updateGlitchBgVisibility() {
     const showGlitch = mainMenu.classList.contains('visible');
     glitchBg.style.display = showGlitch ? 'block' : 'none';
 
-    // Só controla a música se o estado mudou
     if (showGlitch !== lastMenuState) {
         lastMenuState = showGlitch;
 
-        // Controla a música do menu apenas quando o menu fica visível
         if (showGlitch) {
             if (typeof GameAudio !== 'undefined' && GameAudio.startMenuMusic) {
-                GameAudio.stopAllMusic(); // Para a música do jogo se estiver tocando
-                await GameAudio.startMenuMusic(); // Inicia a música do menu
+                GameAudio.stopAllMusic();
+                await GameAudio.startMenuMusic();
             }
         }
-        // Não para a música do menu quando ele fica invisível - isso é controlado manually
     }
 }
 

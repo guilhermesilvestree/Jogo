@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECO - Editor de Fases</title>
+    <link rel="icon" href="assets/aura.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --cyan-glow: #00ffff;
+            --dark-blue: #0a1e28;
+            --background-trans: rgba(10, 30, 40, 0.9);
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #000;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 1.5em;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 240px 1fr 250px; /* Ferramentas | Canvas | Inspetor */
+            gap: 20px;
+            width: 100%;
+            height: calc(100% - 60px);
+            max-width: 1600px;
+            visibility: hidden; /* Começa escondido */
+        }
+        
+        #toolbar {
+            display: flex; flex-direction: column; gap: 8px; padding: 15px;
+            background-color: var(--background-trans); border: 1px solid #00ffff88;
+            border-radius: 8px;
+        }
+        #toolbar h3 {
+            margin: 0 0 10px 0; text-align: center; color: var(--cyan-glow);
+            font-size: 1.4em; text-shadow: 0 0 8px var(--cyan-glow); letter-spacing: 1px;
+        }
+        .tool-button {
+            padding: 12px 15px; font-size: 1em; font-weight: 600;
+            font-family: 'Montserrat', sans-serif;
+            background: transparent;
+            border: 2px solid transparent;
+            color: #a9d2d2; cursor: pointer;
+            border-radius: 6px; transition: all 0.2s ease;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .tool-label { display: flex; align-items: center; gap: 12px; }
+        .tool-button i { width: 20px; text-align: center; }
+
+        .tool-button:hover {
+            background-color: rgba(0, 255, 255, 0.1);
+            color: #fff;
+        }
+        .tool-button.active {
+            background-color: var(--cyan-glow);
+            color: var(--dark-blue);
+            box-shadow: 0 0 15px var(--cyan-glow);
+            border-color: var(--cyan-glow);
+        }
+        .tool-button.active .shortcut, .tool-button.active i { color: var(--dark-blue); }
+        .tool-button .shortcut {
+            font-size: 0.8em; font-weight: 700; padding: 3px 7px;
+            border-radius: 4px; background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+        .tool-button.active .shortcut {
+            background: rgba(0,0,0,0.2);
+            border-color: rgba(0,0,0,0.4);
+        }
+        #save-button { border-color: #00ff8888; color: #00ff88; }
+        #save-button:hover { border-color: #00ff88; color: #000; background-color: #00ff88; box-shadow: 0 0 15px #00ff88;}
+
+        #editor-container {
+            border: 2px solid #00ffff;
+            box-shadow: 0 0 25px rgba(0, 255, 255, 0.3);
+            width: 1000px; height: 600px; border-radius: 8px; overflow: hidden;
+            grid-column: 2;
+            justify-self: center;
+        }
+        #editorCanvas { background-color: #080808; }
+
+        #inspector-panel {
+            background-color: var(--background-trans); border: 1px solid #00ffff88;
+            border-radius: 8px; padding: 20px; display: flex; flex-direction: column;
+        }
+        #inspector-panel h3 { margin: 0 0 15px 0; text-align: center; color: var(--cyan-glow); }
+        .property-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; }
+        .property-group label { font-size: 0.9em; color: #ccc; }
+        .property-group input {
+            background: rgba(0, 255, 255, 0.1); border: 1px solid var(--cyan-glow);
+            border-radius: 5px; color: white; padding: 8px; font-size: 1em;
+            width: 100%; box-sizing: border-box;
+        }
+        #inspector-panel .btn {
+            padding: 10px; font-size: 0.9em; font-weight: 600; background-color: rgba(0, 255, 255, 0.2);
+            border: 1px solid var(--cyan-glow); color: var(--cyan-glow); cursor: pointer; border-radius: 5px;
+            transition: all 0.2s ease;
+        }
+        #inspector-panel .btn:hover { background-color: rgba(0, 255, 255, 0.4); color: #fff; }
+        #inspector-empty-state {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100%; text-align: center; color: #88a; user-select: none;
+        }
+        #inspector-empty-state i { font-size: 3em; margin-bottom: 15px; opacity: 0.5; }
+        #inspector-empty-state p { margin: 0; font-style: italic; }
+
+        #json-output {
+            margin-top: 15px; width: 100%; max-width: 1000px; display: none;
+            grid-column: 1 / -1; 
+        }
+        #json-output h3 { text-align: center; color: var(--cyan-glow); text-shadow: 0 0 8px var(--cyan-glow); }
+        #json-textarea {
+            width: 100%; height: 150px; background-color: #080808; border: 1px solid var(--cyan-glow);
+            color: #c1f7ff; font-family: 'Courier New', Courier, monospace; padding: 10px;
+            box-sizing: border-box; border-radius: 8px; resize: vertical;
+        }
+
+        #startup-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center; z-index: 100;
+        }
+        .modal-content {
+            background: var(--dark-blue); border: 1px solid var(--cyan-glow);
+            border-radius: 12px; padding: 2.5em; text-align: center;
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+            display: flex; flex-direction: column; gap: 20px;
+        }
+        .modal-content h2 { margin: 0; font-size: 1.8em; color: var(--cyan-glow); }
+        #level-select {
+            padding: 10px; font-size: 1em; background: rgba(0,0,0,0.3);
+            border: 1px solid #00ffff88; border-radius: 5px; color: #fff;
+            font-family: 'Montserrat', sans-serif;
+        }
+        .modal-buttons { display: flex; gap: 15px; justify-content: center; }
+    </style>
+</head>
+<body>
+    <div id="startup-modal">
+        <div class="modal-content">
+            <h2>Como deseja começar?</h2>
+            <button id="start-new-btn" class="tool-button active" style="justify-content: center;">
+                <i class="fas fa-file"></i> Começar do Zero
+            </button>
+            <div>
+                <label for="level-select">Ou use uma fase como base:</label>
+                <select id="level-select"></select>
+            </div>
+            <div class="modal-buttons">
+                <button id="load-level-btn" class="tool-button" style="background-color: #00ff8820; border-color: #00ff88;">
+                    <i class="fas fa-upload"></i> Carregar Fase
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        </div>
+    
+    <div id="json-output">
+        <h3>JSON da Fase (Copie e cole em `mapData.js`)</h3>
+        <textarea id="json-textarea" readonly></textarea>
+    </div>
+
+    <script type="module" src="editor.js"></script>
+</body>
+</html>
