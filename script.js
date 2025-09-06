@@ -503,18 +503,18 @@ class OrbParticle {
         this.y = y;
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-        this.lifespan = 1000 + Math.random() * 500; 
+        this.lifespan = 1000 + Math.random() * 500;
         this.life = this.lifespan;
         this.size = Math.random() * 3 + 1;
         this.alpha = 1;
         // COR ALTERADA para ciano
-        this.color = 'rgba(0, 255, 255, 1)'; 
+        this.color = 'rgba(0, 255, 255, 1)';
     }
 
     update() {
         this.x += this.vx;
         this.y += this.vy;
-        this.life -= 16; 
+        this.life -= 16;
         this.alpha = Math.max(0, this.life / this.lifespan);
     }
 
@@ -523,7 +523,7 @@ class OrbParticle {
         ctx.globalAlpha = this.alpha;
         ctx.fillStyle = this.color;
         // Sombra também alterada para ciano
-        ctx.shadowColor = '#00ffff'; 
+        ctx.shadowColor = '#00ffff';
         ctx.shadowBlur = 8;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -579,7 +579,7 @@ class Player {
     constructor() {
         this.width = 40; this.height = 50; this.position = { x: 100, y: 100 }; this.velocity = { x: 0, y: 0 };
         this.baseSpeed = 2;
-        this.baseJumpForce = 12; this.baseShortPingCooldown = 500; this.baseLongPingCooldown = 3000;
+        this.baseJumpForce = 12; this.baseShortPingCooldown = 500; this.baseLongPingCooldown = 9000;
         this.baseProjectileCooldown = 1000;
         this.onGround = false; this.lastShortPing = 0; this.lastLongPing = 0; this.lastProjectileTime = 0;
         this.stepSoundInterval = 250;
@@ -1635,7 +1635,7 @@ function showMessage(options) {
     if (customClass) {
         messageBox.classList.add(customClass);
     }
-    
+
     let finalHtml = '';
 
     if (isIntro) {

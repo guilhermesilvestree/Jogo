@@ -62,7 +62,7 @@ function runEditorLogic(baseData) {
     let currentTool = 'platform', isMouseDown = false, startX, startY, selectedObjects = [];
     let resizeHandle = null, isDragging = false, isMarqueeSelecting = false, marqueeRect = { x: 0, y: 0, w: 0, h: 0 };
     
-    const floor = { x: 0, y: 580, w: 1000, h: 20, isFixed: true };
+    const floor = { x: 0, y: 630, w: 1482, h: 20, isFixed: true };
     let platforms, enemies, playerStart, exit;
 
     if (baseData) {
