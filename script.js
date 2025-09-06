@@ -2,7 +2,7 @@
 // JOGO: ECO-LOCALIZADOR (Edição Gemini)
 // =================================================================
 
-import { translations } from './languages.js';
+import { translations } from './scripts/languages.js';
 import { levelData } from "./scripts/mapData.js";
 
 // --- SISTEMA DE CONFIGURAÇÕES E IDIOMA ---
@@ -398,47 +398,47 @@ window.addEventListener('keyup', (e) => {
 
 const GRAVITY = 0.5;
 const playerSprite = new window.Image();
-playerSprite.src = 'assets/ecoskin.png';
+playerSprite.src = 'assets/sprites/ecoskin.png';
 let playerSpriteLoaded = false;
 playerSprite.onload = () => { playerSpriteLoaded = true; };
 
 const playerWinSprite = new window.Image();
-playerWinSprite.src = 'assets/ecoskin.png';
+playerWinSprite.src = 'assets/sprites/ecoskin.png';
 let playerWinSpriteLoaded = false;
 playerWinSprite.onload = () => { playerWinSpriteLoaded = true; };
 
 const enemySprite = new window.Image();
-enemySprite.src = 'assets/inimigo1.png';
+enemySprite.src = 'assets/sprites/inimigo1.png';
 let enemySpriteLoaded = false;
 enemySprite.onload = () => { enemySpriteLoaded = true; };
 
 const enemySprite2 = new window.Image();
-enemySprite2.src = 'assets/inimigo2.png';
+enemySprite2.src = 'assets/sprites/inimigo2.png';
 let enemySprite2Loaded = false;
 enemySprite2.onload = () => { enemySprite2Loaded = true; };
 
 const enemyStunSprite = new window.Image();
-enemyStunSprite.src = 'assets/inimigo1.png';
+enemyStunSprite.src = 'assets/sprites/inimigo1.png';
 let enemyStunSpriteLoaded = false;
 enemyStunSprite.onload = () => { enemyStunSpriteLoaded = true; };
 
 const projectileSprite1 = new window.Image();
-projectileSprite1.src = 'assets/disparo1.png';
+projectileSprite1.src = 'assets/sprites/disparo1.png';
 let projectileSprite1Loaded = false;
 projectileSprite1.onload = () => { projectileSprite1Loaded = true; };
 
 const projectileSprite2 = new window.Image();
-projectileSprite2.src = 'assets/disparo2.png';
+projectileSprite2.src = 'assets/sprites/disparo2.png';
 let projectileSprite2Loaded = false;
 projectileSprite2.onload = () => { projectileSprite2Loaded = true; };
 
 
 const deathSprites = [];
 const deathSpriteUrls = [
-    'assets/morte/ecoskin-morte1.png',
-    'assets/morte/ecoskin-morte2.png',
-    'assets/morte/ecoskin-morte3.png',
-    'assets/morte/ecoskin-morte4.png'
+    'assets/sprites/morte/ecoskin-morte1.png',
+    'assets/sprites/morte/ecoskin-morte2.png',
+    'assets/sprites/morte/ecoskin-morte3.png',
+    'assets/sprites/morte/ecoskin-morte4.png'
 ];
 let deathSpritesLoaded = 0;
 deathSpriteUrls.forEach((url, index) => {
