@@ -93,7 +93,7 @@ const rawLevelData = [
             { x: 309, y: 314 }
         ],
         exit: { x: 877, y: 398, width: 51, height: 72 }
-<<<<<<< HEAD
+
     },
     /*    {
             name: "A Fenda dos Sussurros",
@@ -175,10 +175,9 @@ const rawLevelData = [
             acid: [],
             coins: [],
             exit: { x: 966, y: 655, width: 51, height: 72 }
-        } */
-=======
+        }
     },
-/*    {
+    {
         name: "A Fenda dos Sussurros",
         playerStart: { x: 82, y: 145 },
         platforms: [
@@ -259,7 +258,6 @@ const rawLevelData = [
         coins: [],
         exit: { x: 966, y: 655, width: 51, height: 72 }
     } */
->>>>>>> 6b35a5b1dfa741efe4860e66ec799f8513f469bc
 ];
 // lógica de proporção/responsividade do mapa em relação a tela
 
@@ -268,11 +266,11 @@ export function getLevelData() {
     const screenDecimalX = window.innerWidth / 1491;  // base largura
     const screenDecimalY = window.innerHeight / 832; // base altura
 
-<<<<<<< HEAD
+
     // console.log(screenDecimalX, screenDecimalY);
-=======
+
     console.log(screenDecimalX, screenDecimalY);
->>>>>>> 6b35a5b1dfa741efe4860e66ec799f8513f469bc
+
 
     // função para escalar objetos
     const scaleObject = (obj, keys) => {
@@ -311,11 +309,5 @@ export function getLevelData() {
         }));
     };
     return generateLevelData()
-<<<<<<< HEAD
-}
-function getLevels() {
-    const level = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)), coins: data.coins ? data.coins.map(c => new Coin(c.x, c.y)) : [] }));
-    return level
-=======
->>>>>>> 6b35a5b1dfa741efe4860e66ec799f8513f469bc
+
 }
