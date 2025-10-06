@@ -3,11 +3,11 @@
 // Por: ECO (Especialista em Construção de Odds)
 // =================================================================
 
-(function() {
+(function () {
     // Variáveis de controle globais para os cheats
-    window.DEV_MODE = true; // Habilita modo de desenvolvimento
+    window.DEV_MODE = false; // Habilita modo de desenvolvimento
     window.DEV_MODE_INVINCIBLE = false;
-    window.DEV_MODE_REVEAL_MAP = false;
+    window.DEV_MODE_REVEAL_MAP = true;
 
     // Aguarda o carregamento completo da página
     window.addEventListener('load', () => {
@@ -24,11 +24,14 @@
      * Cria a estrutura HTML e o estilo do painel de desenvolvimento.
      */
     function createDevPanel() {
-        const panel = document.createElement('div');
-        panel.id = 'eco-dev-panel';
-        panel.classList.add('minimized'); // Começa minimizado
+        if (DEV_MODE === true) {
 
-        const styles = `
+
+            const panel = document.createElement('div');
+            panel.id = 'eco-dev-panel';
+            panel.classList.add('minimized'); // Começa minimizado
+
+            const styles = `
             #eco-dev-panel {
                 position: fixed; top: 10px; right: 10px; background-color: rgba(10, 30, 40, 0.95);
                 border: 2px solid #00ffff; border-radius: 8px; box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
@@ -92,7 +95,7 @@
             #eco-dev-panel .stat-display span { color: #00ffff; }
         `;
 
-        panel.innerHTML = `
+            panel.innerHTML = `
             <style>${styles}</style>
             <h3 id="eco-dev-title" title="Clique para abrir/fechar painel">Painel Hacker - ECO v4.0</h3>
             <div class="dev-group">
@@ -117,14 +120,15 @@
                 <button id="dev-refresh-stats">Atualizar Stats</button>
             </div>
         `;
-        document.body.appendChild(panel);
+            document.body.appendChild(panel);
 
-        // Listener para minimizar/maximizar no título
-        const title = panel.querySelector('#eco-dev-title');
-        title.style.cursor = 'pointer';
-        title.addEventListener('click', () => {
-            panel.classList.toggle('minimized');
-        });
+            // Listener para minimizar/maximizar no título
+            const title = panel.querySelector('#eco-dev-title');
+            title.style.cursor = 'pointer';
+            title.addEventListener('click', () => {
+                panel.classList.toggle('minimized');
+            });
+        }
     }
 
     /**
@@ -153,13 +157,13 @@
                     if (window.ecoGame.clearLeaderboard && typeof window.ecoGame.clearLeaderboard === 'function') {
                         await window.ecoGame.clearLeaderboard();
                         alert("ECO DEV: Ranking da semana limpo com sucesso!");
-                        
+
                         // Atualiza o localStorage para indicar que foi resetado manualmente
                         const weekStart = new Date();
                         weekStart.setDate(weekStart.getDate() - weekStart.getDay() + 1); // Segunda-feira
                         weekStart.setHours(0, 0, 0, 0);
                         localStorage.setItem('eco_lastLeaderboardReset', weekStart.getTime().toString());
-                        
+
                         console.log("ECO DEV: Ranking limpo manualmente via painel de desenvolvimento");
                     } else {
                         alert("ECO DEV Error: Função de limpeza do ranking não encontrada.");
@@ -176,17 +180,17 @@
                 try {
                     if (window.ecoGame.clearLeaderboard && typeof window.ecoGame.clearLeaderboard === 'function') {
                         await window.ecoGame.clearLeaderboard();
-                        
+
                         // Força o timestamp para a semana atual (simula que é segunda-feira)
                         const now = new Date();
                         const weekStart = new Date(now);
                         weekStart.setDate(now.getDate() - now.getDay() + 1); // Segunda-feira
                         weekStart.setHours(0, 0, 0, 0);
                         localStorage.setItem('eco_lastLeaderboardReset', weekStart.getTime().toString());
-                        
+
                         alert("ECO DEV: Reset forçado executado com sucesso! Ranking limpo e timestamp atualizado.");
                         console.log("ECO DEV: Reset forçado executado via painel de desenvolvimento");
-                        
+
                         // Atualiza as estatísticas para mostrar as mudanças
                         updateStatsDisplay();
                     } else {
@@ -204,18 +208,18 @@
                 const now = new Date();
                 const dayOfWeek = now.getDay();
                 const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-                
+
                 let info = `=== INFORMAÇÕES DO RANKING ===\n\n`;
                 info += `Data atual: ${now.toLocaleString()}\n`;
                 info += `Dia da semana: ${dayNames[dayOfWeek]}\n`;
                 info += `É segunda-feira: ${dayOfWeek === 1 ? 'Sim' : 'Não'}\n\n`;
-                
+
                 if (window.ecoGame.getNextResetInfo && typeof window.ecoGame.getNextResetInfo === 'function') {
                     const resetInfo = window.ecoGame.getNextResetInfo();
                     info += `Próximo reset: ${resetInfo.days} dias e ${resetInfo.hours} horas\n`;
                     info += `Data do próximo reset: ${resetInfo.nextResetDate.toLocaleString()}\n\n`;
                 }
-                
+
                 const lastReset = localStorage.getItem('eco_lastLeaderboardReset');
                 if (lastReset) {
                     const lastResetDate = new Date(parseInt(lastReset));
@@ -223,9 +227,9 @@
                 } else {
                     info += `Último reset: Nunca\n`;
                 }
-                
+
                 info += `\nTimestamp salvo: ${lastReset || 'Nenhum'}`;
-                
+
                 alert(info);
                 console.log("ECO DEV: Informações do ranking exibidas");
             } catch (error) {
@@ -257,7 +261,7 @@
         });
 
         document.getElementById('dev-refresh-stats').addEventListener('click', updateStatsDisplay);
-        
+
         document.getElementById('dev-create-mock-data').addEventListener('click', async () => {
             if (confirm("ECO DEV: Criar 10 scores mockados no ranking para testes? Esta ação substituirá os dados existentes.")) {
                 try {
@@ -273,7 +277,7 @@
                 }
             }
         });
-        
+
         updateStatsDisplay();
         setInterval(updateStatsDisplay, 2000);
     }
@@ -302,7 +306,7 @@
                     const resetInfo = window.ecoGame.getNextResetInfo();
                     const lastReset = localStorage.getItem('eco_lastLeaderboardReset');
                     const lastResetDate = lastReset ? new Date(parseInt(lastReset)).toLocaleDateString() : "Nunca";
-                    
+
                     rankingInfo = `Ranking: ${resetInfo.days}d ${resetInfo.hours}h até reset<br>
                     <strong>Último reset:</strong> <span>${lastResetDate}</span>`;
                 } catch (e) {

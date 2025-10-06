@@ -3,7 +3,16 @@
 // =================================================================
 
 import { translations } from './scripts/languages.js';
-import { levelData } from "./scripts/mapData.js";
+// import { levelData } from "./scripts/mapData.js";
+import { getLevelData } from "./scripts/mapData.js";
+
+function getLevels() {
+    let levelData = getLevelData()
+    const level = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)), coins: data.coins ? data.coins.map(c => new Coin(c.x, c.y)) : [] }));
+    return level
+}
+
+
 
 // --- SISTEMA DE CONFIGURAÇÕES E IDIOMA ---
 const defaultSettings = {
@@ -1072,13 +1081,13 @@ class Enemy {
             isChased = false;
             if (player) player.isShaking = false;
             this.state = 'patrol';
-            this.chasePatrolDirection = null; 
+            this.chasePatrolDirection = null;
         }
-        
+
         if (this.state === 'chasing') {
             this.target = player.position;
         }
-        
+
         let desiredVelocityX = this.velocity.x;
         const verticalDistance = this.position.y - player.position.y;
         const isPlayerUnreachable = verticalDistance > this.height;
@@ -1101,7 +1110,7 @@ class Enemy {
 
             case 'chasing':
                 if (!this.target) { this.state = 'patrol'; return; }
-                
+
                 // --- VELOCIDADE DE PERSEGUIÇÃO AJUSTADA AQUI ---
                 const chaseSpeed = this.speed * 1.6; // Era 2, agora é 1.6 (60% mais rápido que o normal)
 
@@ -1120,7 +1129,7 @@ class Enemy {
                     } else if (this.position.x < leftBound && this.chasePatrolDirection === -1) {
                         this.chasePatrolDirection = 1;
                     }
-                    
+
                     desiredVelocityX = chaseSpeed * this.chasePatrolDirection;
 
                 } else {
@@ -1158,7 +1167,7 @@ class Enemy {
                 this.velocity.x = desiredVelocityX;
             } else {
                 this.velocity.x *= -1;
-                if(this.chasePatrolDirection !== null) {
+                if (this.chasePatrolDirection !== null) {
                     this.chasePatrolDirection *= -1;
                 }
                 if (this.velocity.x === 0) {
@@ -1168,7 +1177,7 @@ class Enemy {
         } else {
             this.velocity.x = desiredVelocityX;
         }
-        
+
         if (this.velocity.x > 0) this.facing = 'right';
         else if (this.velocity.x < 0) this.facing = 'left';
     }
@@ -1211,7 +1220,7 @@ class HeartOfLight {
         this.isAbsorbed = true;
         isLevelEnding = true;
         gameRunning = false;
-        
+
         const centerX = this.position.x + this.width / 2;
         const centerY = this.position.y + this.height / 2;
 
@@ -1226,11 +1235,11 @@ class HeartOfLight {
                 revealedObjects.push(new RevealedObject(platform, 2000));
             }
         });
-        
+
         // 3. Animação de Ping Existente
         GameAudio.sounds.levelWinExplosion.triggerAttackRelease("2n");
         pings.push(new Ping(centerX, centerY, canvas.width * 1.5, 1500, 'rgba(255, 255, 255, 0.9)', 25, 0));
-        
+
         setTimeout(() => {
             GameAudio.sounds.levelWin.triggerAttackRelease("C5", "0.5s");
             currentLevelIndex++;
@@ -1253,7 +1262,11 @@ class Coin { constructor(x, y) { this.x = x; this.y = y; this.radius = 14; this.
 
 let currentLevelIndex = 0;
 
-const levels = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)), coins: data.coins ? data.coins.map(c => new Coin(c.x, c.y)) : [] }));
+let levels = getLevels()
+
+// window.addEventListener('resize', () => {
+//     levels = getLevels()
+// })
 
 let coins = []; let totalCoins = 0; let collectedCoins = [];
 function getCoinId(levelIndex, coin) { return `${levelIndex}-${Math.round(coin.x)}-${Math.round(coin.y)}`; }
@@ -1494,9 +1507,9 @@ function checkCollisionsAndReveal() {
 function isCircleIntersectingRect(circle, rect) { const distX = Math.abs(circle.position.x - rect.position.x - rect.width / 2); const distY = Math.abs(circle.position.y - rect.position.y - rect.height / 2); if (distX > (rect.width / 2 + circle.radius) || distY > (rect.height / 2 + circle.radius)) return false; if (distX <= (rect.width / 2) || distY <= (rect.height / 2)) return true; const dx = distX - rect.width / 2; const dy = distY - rect.height / 2; return (dx * dx + dy * dy <= (circle.radius * circle.radius)); }
 function isRectIntersectingRect(rect1, rect2) {
     return rect1.position.x < rect2.position.x + rect2.width &&
-           rect1.position.x + rect1.width > rect2.position.x &&
-           rect1.position.y < rect2.position.y + rect2.height &&
-           rect1.position.y + rect1.height > rect2.position.y;
+        rect1.position.x + rect1.width > rect2.position.x &&
+        rect1.position.y < rect2.position.y + rect2.height &&
+        rect1.position.y + rect1.height > rect2.position.y;
 }
 
 
@@ -1537,7 +1550,7 @@ function animate() {
             if (projectiles) {
                 projectiles.forEach(p => p.draw());
             }
-            
+
             // Desenhar partículas de fim de nível
             if (levelEndParticles) {
                 levelEndParticles.forEach((p, index) => {
@@ -1664,7 +1677,7 @@ function showMessage(options) {
             <button id="message-button" class="message-button">${lang[buttonKey] || buttonKey}</button>
         `;
     }
-    
+
     messageBox.innerHTML = finalHtml;
     messageOverlay.appendChild(messageBox);
 
