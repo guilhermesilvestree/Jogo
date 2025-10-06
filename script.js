@@ -5,6 +5,7 @@
 import { translations } from './scripts/languages.js';
 // import { levelData } from "./scripts/mapData.js";
 import { getLevelData } from "./scripts/mapData.js";
+<<<<<<< HEAD
 
 function getLevels() {
     let levelData = getLevelData()
@@ -12,6 +13,9 @@ function getLevels() {
     return level
 }
 
+=======
+let levelData = getLevelData()
+>>>>>>> 6b35a5b1dfa741efe4860e66ec799f8513f469bc
 
 
 // --- SISTEMA DE CONFIGURAÇÕES E IDIOMA ---

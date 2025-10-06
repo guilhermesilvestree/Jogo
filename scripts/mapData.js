@@ -93,6 +93,7 @@ const rawLevelData = [
             { x: 309, y: 314 }
         ],
         exit: { x: 877, y: 398, width: 51, height: 72 }
+<<<<<<< HEAD
     },
     /*    {
             name: "A Fenda dos Sussurros",
@@ -175,6 +176,90 @@ const rawLevelData = [
             coins: [],
             exit: { x: 966, y: 655, width: 51, height: 72 }
         } */
+=======
+    },
+/*    {
+        name: "A Fenda dos Sussurros",
+        playerStart: { x: 82, y: 145 },
+        platforms: [
+            { x: 0, y: 699, w: 1030, h: 24 },
+            { x: 51, y: 218, w: 154, h: 24 },
+            { x: 309, y: 302, w: 103, h: 24 },
+            { x: 103, y: 423, w: 103, h: 24 },
+            { x: 258, y: 544, w: 103, h: 24 },
+            { x: 515, y: 605, w: 103, h: 24 },
+            { x: 671, y: 508, w: 103, h: 24 },
+            { x: 825, y: 412, w: 154, h: 24 },
+            { x: 618, y: 314, w: 103, h: 24 },
+            { x: 772, y: 218, w: 103, h: 24 },
+            { x: 927, y: 145, w: 103, h: 24 }
+        ],
+        enemies: [
+            { x: 155, y: 647 },
+            { x: 835, y: 357 },
+            { x: 628, y: 260 },
+            { x: 268, y: 490 },
+            { x: 825, y: 647 }
+        ],
+        water: [],
+        acid: [
+            { x: 464, y: 675, w: 412, h: 24 }
+        ],
+        coins: [
+            { x: 62, y: 181 },
+            { x: 927, y: 109 },
+            { x: 721, y: 484 }
+        ],
+        exit: { x: 957, y: 73, width: 51, height: 72 }
+    },
+    {
+        name: "O Coração da Escuridão",
+        playerStart: { x: 51, y: 605 },
+        platforms: [
+            { x: 0, y: 699, w: 1030, h: 24 },
+            { x: 876, y: 605, w: 154, h: 24 },
+            { x: 0, y: 508, w: 772, h: 24 },
+            { x: 206, y: 387, w: 154, h: 24 },
+            { x: 464, y: 181, w: 20, h: 121 },
+            { x: 567, y: 266, w: 206, h: 24 },
+            { x: 206, y: 181, w: 206, h: 24 }
+        ],
+        enemies: [
+            { x: 309, y: 454 },
+            { x: 618, y: 212 },
+            { x: 227, y: 127 },
+            { x: 907, y: 550 },
+            { x: 671, y: 454 },
+            { x: 825, y: 647 }
+        ],
+        water: [],
+        acid: [],
+        coins: [
+            { x: 927, y: 568 },
+            { x: 258, y: 351 },
+            { x: 618, y: 242 }
+        ],
+        exit: { x: 258, y: 109, width: 51, height: 72 }
+    },
+    {
+        name: "teste",
+        playerStart: { x: 202, y: 544 },
+        platforms: [
+            { x: 0, y: 699, w: 1030, h: 24 },
+            { x: 177, y: 639, w: 265, h: 24 },
+            { x: 377, y: 558, w: 224, h: 24 }
+        ],
+        enemies: [
+            { x: 568, y: 452 },
+            { x: 459, y: 463 },
+            { x: 512, y: 478 }
+        ],
+        water: [],
+        acid: [],
+        coins: [],
+        exit: { x: 966, y: 655, width: 51, height: 72 }
+    } */
+>>>>>>> 6b35a5b1dfa741efe4860e66ec799f8513f469bc
 ];
 // lógica de proporção/responsividade do mapa em relação a tela
 
@@ -183,7 +268,11 @@ export function getLevelData() {
     const screenDecimalX = window.innerWidth / 1491;  // base largura
     const screenDecimalY = window.innerHeight / 832; // base altura
 
+<<<<<<< HEAD
     // console.log(screenDecimalX, screenDecimalY);
+=======
+    console.log(screenDecimalX, screenDecimalY);
+>>>>>>> 6b35a5b1dfa741efe4860e66ec799f8513f469bc
 
     // função para escalar objetos
     const scaleObject = (obj, keys) => {
@@ -222,8 +311,11 @@ export function getLevelData() {
         }));
     };
     return generateLevelData()
+<<<<<<< HEAD
 }
 function getLevels() {
     const level = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)), coins: data.coins ? data.coins.map(c => new Coin(c.x, c.y)) : [] }));
     return level
+=======
+>>>>>>> 6b35a5b1dfa741efe4860e66ec799f8513f469bc
 }
