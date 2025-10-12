@@ -181,6 +181,58 @@ canvas#gameCanvas {
     box-shadow: 0 0 30px var(--cyan-glow), inset 0 0 20px rgba(0, 255, 255, 0.3);
 }
 
+.changelog-mini-div {
+    width: 95%;
+    display: flex;
+    justify-content: end;
+}
+
+.game-changelog {
+    display: none;
+    position: absolute;
+    top: 0px;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    justify-content: center;
+    align-items: center;
+}
+
+.game-changelog .content {
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 10px;
+    border: solid #00ffff;
+    padding: 5%;
+    height: 50%;
+    width: 40%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-changelog .content ul {
+    text-align: start;
+}
+
+.game-changelog .content ul li span {
+    color: #00ffff;
+    font-weight: bold;
+}
+
+.game-changelog .content button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 5%;
+}
+
+@media (max-width: 978px) {
+    .game-changelog .content {
+        height: 60%;
+    }
+}
+
 #main-menu {
     position: absolute;
     top: 0;

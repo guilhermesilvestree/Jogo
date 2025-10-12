@@ -5,12 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Eco</title>
-    <meta name="description" content="Um jogo onde o jogador controla um personagem preso em uma dimensão misteriosa. O objetivo é explorar, sobreviver e encontrar uma forma de escapar.">
+    <meta name="description"
+        content="Um jogo onde o jogador controla um personagem preso em uma dimensão misteriosa. O objetivo é explorar, sobreviver e encontrar uma forma de escapar.">
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://brgui22.github.io/Jogo">
     <meta property="og:title" content="Eco - A Escuridão Ouve">
-    <meta property="og:description" content="Um jogo onde o jogador controla um personagem preso em uma dimensão misteriosa. O objetivo é explorar, sobreviver e encontrar uma forma de escapar.">
+    <meta property="og:description"
+        content="Um jogo onde o jogador controla um personagem preso em uma dimensão misteriosa. O objetivo é explorar, sobreviver e encontrar uma forma de escapar.">
     <meta property="og:image" content="https://brgui22.github.io/Jogo/assets/aura.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
     <link rel="icon" href="assets/aura.png">
@@ -46,7 +48,7 @@
             </div>
         </div>
         <div id="message-overlay" class="overlay">
-            </div>
+        </div>
         <div id="main-menu" class="overlay">
             <h1 data-translate-key="gameTitle">Eco</h1>
             <p data-translate-key="gameSubtitle">A escuridão ouve cada passo seu.</p>
@@ -204,18 +206,24 @@
                         </div>
                         <div class="custom-select-container">
                             <div id="custom-select-trigger" class="select-selected">
-                                </div>
+                            </div>
                             <div id="custom-select-items" class="select-items select-hide">
                                 <div data-value="pt">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Flag_of_Brazil.svg/1280px-Flag_of_Brazil.svg.png" class="select-flag" alt="Bandeira do Brasil" onerror="this.style.display='none'">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Flag_of_Brazil.svg/1280px-Flag_of_Brazil.svg.png"
+                                        class="select-flag" alt="Bandeira do Brasil"
+                                        onerror="this.style.display='none'">
                                     <span>Português</span>
                                 </div>
                                 <div data-value="en">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Flag_of_the_United_States_%28Web_Colors%29.svg/1920px-Flag_of_the_United_States_%28Web_Colors%29.svg.png" class="select-flag" alt="Bandeiras EUA/Reino Unido" onerror="this.style.display='none'">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/71/Flag_of_the_United_States_%28Web_Colors%29.svg/1920px-Flag_of_the_United_States_%28Web_Colors%29.svg.png"
+                                        class="select-flag" alt="Bandeiras EUA/Reino Unido"
+                                        onerror="this.style.display='none'">
                                     <span>English</span>
                                 </div>
                                 <div data-value="es">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Flag_of_the_Kingdom_of_Spain_%28%22Correct%22_Heraldic_Coat_of_Arms%29.svg/640px-Flag_of_the_Kingdom_of_Spain_%28%22Correct%22_Heraldic_Coat_of_Arms%29.svg.png" class="select-flag" alt="Bandeiras EUA/Reino Unido" onerror="this.style.display='none'">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Flag_of_the_Kingdom_of_Spain_%28%22Correct%22_Heraldic_Coat_of_Arms%29.svg/640px-Flag_of_the_Kingdom_of_Spain_%28%22Correct%22_Heraldic_Coat_of_Arms%29.svg.png"
+                                        class="select-flag" alt="Bandeiras EUA/Reino Unido"
+                                        onerror="this.style.display='none'">
                                     <span>Español</span>
                                 </div>
                             </div>
@@ -375,8 +383,29 @@
                     </div>
                 </div>
             </div>
+            <div class="changelog-mini-div">
+                <button class="changelog-mini" id="changelogMini">
+                    Changelog
+                </button>
+            </div>
             <button id="save-slot-back-button" class="back-button" style="display: none;"
                 data-translate-key="buttonBack">Voltar</button>
+            <div class="game-changelog" id="changelog">
+                <div class="content">
+                    <h1>Changelog 0.3.1</h1>
+                    <h2>O que mudou?</h2>
+                    <ul>
+                        <li><span>Sistema de Controle:</span> Agora o Eco funciona tanto no teclado quanto no Controle
+                        </li>
+                        <li><span>Sistema de Tiro:</span> Agora o Eco tem um sistema de tiro que paralisa os inimigos
+                        </li>
+                        <li><span>Correção de bugs:</span> Bugs como o de o Mapa não Carregar ou ficar em outra escala
+                            foram corrigidos</li>
+                        <li><span>Otimização:</span> Otimização para computadores mais antigos</li>
+                    </ul>
+                    <button id="redirectChangelog">Entendi</button>
+                </div>
+            </div>
         </div>
         <div id="name-save-overlay" class="overlay" style="z-index: 40;">
             <h1 data-translate-key="saveNameGame">Nomear Jogo</h1>

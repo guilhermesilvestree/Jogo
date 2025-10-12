@@ -33,7 +33,7 @@ const rawLevelData = [
         name: "Os Primeiros Ecos",
         playerStart: { x: 51, y: 580 },
         platforms: [
-            { x: 0, y: 735, w: 1485, h: 60 },
+            { x: 0, y: 735, w: 1485, h: 80 },
             { x: 155, y: 640, w: 103, h: 24 },
             { x: 360, y: 567, w: 309, h: 24 },
             { x: 721, y: 436, w: 103, h: 24 },
@@ -62,7 +62,7 @@ const rawLevelData = [
         name: "A Caverna Inundada",
         playerStart: { x: 51, y: 145 },
         platforms: [
-            { x: 0, y: 760, w: 1485, h: 60 },
+            { x: 0, y: 760, w: 1485, h: 80 },
             { x: 0, y: 217, w: 206, h: 24 },
             { x: 258, y: 350, w: 103, h: 24 },
             { x: 412, y: 581, w: 10, h: 181 },
@@ -95,7 +95,7 @@ const rawLevelData = [
         exit: { x: 877, y: 398, width: 51, height: 72 }
 
     },
-    /*    {
+    /* {
             name: "A Fenda dos Sussurros",
             playerStart: { x: 82, y: 145 },
             platforms: [
