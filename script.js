@@ -4,12 +4,26 @@
 
 import { translations } from './scripts/languages.js';
 import { getLevelData } from "./scripts/mapData.js";
+import { keys, handleGamepadInput, keyUpFunction, keyDownFunction } from './scripts/controls.js';
 
 function getLevels() {
     let levelData = getLevelData()
     const level = levelData.map(data => ({ ...data, platforms: data.platforms.map(p => new Platform(p.x, p.y, p.w, p.h)), water: data.water.map(w => new Water(w.x, w.y, w.w, w.h)), acid: data.acid.map(a => new AcidWater(a.x, a.y, a.w, a.h)), coins: data.coins ? data.coins.map(c => new Coin(c.x, c.y)) : [] }));
     return level
 }
+
+// eventlisteners de teclas e load de função de reconhecimento de controle
+
+window.addEventListener('keydown', (e) => {
+    keyDownFunction(togglePause, player, nameSaveOverlay, gameRunning, e)
+});
+
+window.addEventListener('keyup', (e) => {
+    keyUpFunction(e)
+});
+
+
+
 
 // --- SISTEMA DE CONFIGURAÇÕES E IDIOMA ---
 const defaultSettings = {
@@ -128,7 +142,7 @@ const changelogMiniBtn = document.getElementById('changelogMini')
 
 if (localStorage.length != 0) {
     changelogDiv.style.display = 'none'
-}else {
+} else {
     changelogDiv.style.display = 'flex'
 
 }
@@ -391,188 +405,6 @@ let chaseVignetteOpacity = 0;
 function resizeCanvas() { const container = document.querySelector('.game-container'); canvas.width = container.clientWidth; canvas.height = container.clientHeight; }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas();
-
-
-const keys = { a: { pressed: false }, d: { pressed: false }, arrowLeft: { pressed: false }, arrowRight: { pressed: false }, w: { pressed: false }, arrowUp: { pressed: false }, space: { pressed: false } };
-
-
-window.addEventListener('keydown', (e) => {
-
-    if (nameSaveOverlay.classList.contains('visible')) return;
-
-    if (!gameRunning && e.key !== 'Escape') return;
-
-    switch (e.key.toLowerCase()) {
-
-        case 'a': keys.a.pressed = true; break;
-
-        case 'd': keys.d.pressed = true; break;
-
-        case 'arrowleft': keys.arrowLeft.pressed = true; break;
-
-        case 'arrowright': keys.arrowRight.pressed = true; break;
-
-        case 'w': case 'arrowup': case ' ': if (!keys.space.pressed) { player.jump(); keys.space.pressed = true; } break;
-
-        case 'q': player.createPing('short'); break;
-
-        case 'e': player.createPing('long'); break;
-
-        case 'c': player.fireProjectile(); break;
-
-        case 'escape': togglePause(); break;
-
-    }
-
-});
-
-window.addEventListener('keyup', (e) => {
-
-    switch (e.key.toLowerCase()) {
-
-        case 'a': keys.a.pressed = false; break;
-
-        case 'd': keys.d.pressed = false; break;
-
-        case 'arrowleft': keys.arrowLeft.pressed = false; break;
-
-        case 'arrowright': keys.arrowRight.pressed = false; break;
-
-        case 'w': case 'arrowup': case ' ': keys.space.pressed = false; break;
-
-    }
-
-});
-
-let gamepad = null;
-const DEAD_ZONE = 0.15; // Para ignorar pequenos movimentos indesejados do analógico (drift)
-
-// 1. Eventos de Conexão/Desconexão
-window.addEventListener('gamepadconnected', (e) => {
-    console.log('Gamepad conectado:', e.gamepad.id);
-    gamepad = e.gamepad;
-});
-
-window.addEventListener('gamepaddisconnected', () => {
-    console.log('Gamepad desconectado.');
-    keys.arrowLeft.pressed = false;
-    keys.a.pressed = false;
-    keys.arrowRight.pressed = false;
-    keys.d.pressed = false;
-    keys.space.pressed = false;
-    gamepad = null;
-});
-
-
-/**
- * Lê o estado do Gamepad e atualiza a variável global 'keys'.
- * ESTA FUNÇÃO DEVE SER CHAMADA EM CADA FRAME DO SEU GAME LOOP.
- */
-export function handleGamepadInput() {
-    // 1. Obter o estado atualizado do controle.
-    const currentPads = navigator.getGamepads();
-    gamepad = currentPads[gamepad ? gamepad.index : 0];
-
-    if (!gamepad || gamepad.mapping !== 'standard') {
-        // Se não houver controle ou o mapeamento for desconhecido, apenas saia.
-        // As chaves de movimento serão definidas como 'false' pelo próximo bloco.
-
-    }else{
-
-    // --- Lógica de Reset para Chaves de Movimento ---
-    // Esta etapa é crucial: garante que o estado do Gamepad só seja aplicado se o controle estiver conectado.
-    // Se o Gamepad for a única fonte de movimento, ele deve sobrescrever o estado de 'keys' a cada frame.
-    // Como estamos integrando com o teclado, vamos apenas aplicar o estado do Gamepad SE estiver conectado.
-
-    const isGamepadActive = !!gamepad;
-
-    // ================================================================
-    // AÇÕES DE MOVIMENTO (Analógicos e D-Pad)
-    // ================================================================
-
-    if (isGamepadActive) {
-        // Mapeamento dos Eixos: Analógico Esquerdo, Eixo X (índice 0)
-        const eixoX = gamepad.axes[0];
-
-        // Se o analógico estiver para a esquerda OU o D-Pad Esquerda (Botão 14) estiver pressionado
-        if (eixoX < -DEAD_ZONE || gamepad.buttons[14].pressed) {
-            keys.arrowLeft.pressed = true;
-            keys.a.pressed = true;
-        }
-        // Se o analógico estiver para a direita OU o D-Pad Direita (Botão 15) estiver pressionado
-        else if (eixoX > DEAD_ZONE || gamepad.buttons[15].pressed) {
-            keys.arrowRight.pressed = true;
-            keys.d.pressed = true;
-        }
-        // Analógico no Centro (dentro da zona morta) e D-Pad não pressionado
-        else {
-            // Apenas definimos como false se o teclado não estiver pressionando também, 
-            // mas no seu caso, a lógica de movimento do jogo lerá:
-            // if (keys.a.pressed || keys.arrowLeft.pressed) { ... }
-            // O Gamepad apenas define o estado. O teclado define o estado. O último a agir prevalece no frame.
-            keys.arrowLeft.pressed = false;
-            keys.a.pressed = false;
-            keys.arrowRight.pressed = false;
-            keys.d.pressed = false;
-        }
-    }
-    else {
-        // Novo: Se o Gamepad NÃO ESTIVER ATIVO, ZERA O ESTADO.
-        // Isso garante que se o eixo ficou "preso" e o Gamepad foi desconectado,
-        // o seu loop de jogo verá o estado zerado, e não o valor preso.
-        keys.arrowLeft.pressed = false;
-        keys.a.pressed = false;
-        keys.arrowRight.pressed = false;
-        keys.d.pressed = false;
-        // O pulo (keys.space) é resetado na lógica de botões.
-    }
-
-    // ================================================================
-    // AÇÕES DE BOTÕES (Mapeando para as ações de Pulo, Ping e Tiro)
-    // ================================================================
-
-    if (isGamepadActive) {
-        // Botão A/X (índice 0) -> Mapeia para Pulo/Espaço
-        const A_Button = gamepad.buttons[0];
-        if (A_Button.pressed) {
-            // Ação de Pulo: Replicamos a lógica do seu 'keydown' original.
-            if (!keys.space.pressed) {
-                player.jump();
-                keys.space.pressed = true;
-            }
-        } else {
-            keys.space.pressed = false;
-        }
-
-        // --- Ações de Disparo Único (Ping, Tiro, Pausa) ---
-
-        // Botão Right Bumper (índice 5) -> Mapeia para Ping Curto ('q' original)
-        if (gamepad.buttons[5].pressed && !gamepad.buttons[5].wasPressed) {
-            player.createPing('short');
-        }
-
-        // Botão Left Bumper (índice 4) -> Mapeia para Ping Longo ('e' original)
-        if (gamepad.buttons[4].pressed && !gamepad.buttons[4].wasPressed) {
-            player.createPing('long');
-        }
-
-        // Botão X/Quadrado (índice 2) -> Mapeia para Tiro ('c' original)
-        if (gamepad.buttons[2].pressed && !gamepad.buttons[2].wasPressed) {
-            player.fireProjectile();
-        }
-
-        // Botão Start/Menu (índice 9) -> Mapeia para Pausa ('escape' original)
-        if (gamepad.buttons[9].pressed && !gamepad.buttons[9].wasPressed) {
-            togglePause();
-        }
-
-        // 3. ATUALIZAÇÃO DO ESTADO ANTERIOR DOS BOTÕES
-        // Crucial para detectar a transição de 'não pressionado' para 'pressionado'
-        gamepad.buttons.forEach(button => {
-            button.wasPressed = button.pressed;
-        });
-    }}
-}
 
 
 const GRAVITY = 0.5;
@@ -1686,7 +1518,7 @@ function isRectIntersectingRect(rect1, rect2) {
 function animate() {
     requestAnimationFrame(animate);
 
-    handleGamepadInput();
+    handleGamepadInput(player);
 
     ctx.save();
     ctx.clearRect(0, 0, canvas.width, canvas.height);

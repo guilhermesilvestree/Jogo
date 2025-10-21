@@ -3,6 +3,8 @@
 // Por: ECO (Especialista em Construção de Odds)
 // =================================================================
 
+
+import { log } from "./alertas.js";
 (function () {
     // Variáveis de controle globais para os cheats
     window.DEV_MODE = false; // Habilita modo de desenvolvimento
@@ -15,7 +17,7 @@
             console.error("ECO DEV: O objeto 'window.ecoGame' não foi encontrado. Verifique as edições no 'script.js'.");
             return;
         }
-        console.log("ECO DEV: Painel de Desenvolvimento ativado (v4.0).");
+        log('ECO DEV: Painel de Desenvolvimento ativado (v4.0).', false)
         createDevPanel();
         initializeDevFunctions();
     });
@@ -164,7 +166,7 @@
                         weekStart.setHours(0, 0, 0, 0);
                         localStorage.setItem('eco_lastLeaderboardReset', weekStart.getTime().toString());
 
-                        console.log("ECO DEV: Ranking limpo manualmente via painel de desenvolvimento");
+                        log('ECO DEV: Ranking limpo manualmente via painel de desenvolvimento', false)
                     } else {
                         alert("ECO DEV Error: Função de limpeza do ranking não encontrada.");
                     }
@@ -189,7 +191,7 @@
                         localStorage.setItem('eco_lastLeaderboardReset', weekStart.getTime().toString());
 
                         alert("ECO DEV: Reset forçado executado com sucesso! Ranking limpo e timestamp atualizado.");
-                        console.log("ECO DEV: Reset forçado executado via painel de desenvolvimento");
+                        log('ECO DEV: Reset forçado executado via painel de desenvolvimento', false);
 
                         // Atualiza as estatísticas para mostrar as mudanças
                         updateStatsDisplay();
@@ -231,7 +233,7 @@
                 info += `\nTimestamp salvo: ${lastReset || 'Nenhum'}`;
 
                 alert(info);
-                console.log("ECO DEV: Informações do ranking exibidas");
+                log("ECO DEV: Informações do ranking exibidas", false);
             } catch (error) {
                 console.error("ECO DEV Error ao exibir informações do ranking:", error);
                 alert("ECO DEV Error: Falha ao exibir informações do ranking.");
@@ -267,7 +269,7 @@
                 try {
                     if (window.ecoGame.createMockData && typeof window.ecoGame.createMockData === 'function') {
                         await window.ecoGame.createMockData();
-                        console.log("ECO DEV: Dados mockados criados via painel de desenvolvimento");
+                        log("ECO DEV: Dados mockados criados via painel de desenvolvimento", false);
                     } else {
                         alert("ECO DEV Error: Função de criação de dados mock não encontrada.");
                     }

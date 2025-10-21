@@ -1,3 +1,5 @@
+import { log } from "./alertas.js";
+
 const rawLevelData = [
     {
         name: "O Despertar",
@@ -266,11 +268,7 @@ export function getLevelData() {
     const screenDecimalX = window.innerWidth / 1491;  // base largura
     const screenDecimalY = window.innerHeight / 832; // base altura
 
-
-    // console.log(screenDecimalX, screenDecimalY);
-
-    console.log(screenDecimalX, screenDecimalY);
-
+    log(`${screenDecimalX} ${screenDecimalY}`, false);
 
     // função para escalar objetos
     const scaleObject = (obj, keys) => {

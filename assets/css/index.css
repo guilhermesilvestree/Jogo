@@ -1761,6 +1761,27 @@ input[type=range]:hover::-moz-range-thumb {
     width: 100%;
 }
 
+#optionControlDocument {
+    display: none;
+}
+
+.option-item-stacked .option-label-group .inputs-control input {
+    display: none;
+}
+
+.option-item-stacked .option-label-group .inputs-control label {
+    cursor: pointer;
+}
+
+.option-item-stacked .option-label-group .inputs-control label:hover {
+    color: #00aaaa;
+}
+
+.option-item-stacked .option-label-group .inputs-control .checked-label {
+    border-bottom: solid 1px white;
+    color: #00ffff;
+}
+
 .custom-select-container {
     position: relative;
     width: 100%;
@@ -2239,4 +2260,24 @@ input[type=range]:hover::-moz-range-thumb {
     padding: 14px 30px;
     font-size: 1.2em;
     min-width: 250px
+}
+
+.alert {
+    display: flex;
+    scale: 0;
+    position: absolute;
+    width: 30%;
+    height: 20%;
+    top: 10px;
+    right: 30px;
+    background-color: #000;
+    box-shadow: 0 2px 5px 2px #00aaaa;
+    border-radius: 5px;
+    color: #00ffff;
+    padding: 10px;
+    justify-content: center;
+    align-items: center;
+    font-weight: 600;
+    transition: scale 250ms ease-in-out;
+    transition-delay: 200ms;
 }

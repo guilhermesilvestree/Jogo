@@ -52,23 +52,23 @@ const GameAudio = {
         await this.initAudio();
         this.stopAllMusic();
         this.isMusicPlaying = true;
-    
+
         Tone.Transport.bpm.value = this.originalBpm;
         if (Tone.Transport.state !== 'started') Tone.Transport.start();
-    
+
         const patterns = [
             [["0:0", "C2"], ["0:2", "G2"]],
             [["0:1", "Eb2"], ["0:3", "Bb2"]],
             [["0:0", "F2"], ["0:2:2", "C3"]],
         ];
-    
+
         this.ambientPart = new Tone.Part((time, note) => {
             this.musicSynths.pad.triggerAttackRelease(note, "2n", time);
         }, patterns[0]).start(0); // Inicia no tempo 0 do loop
 
         this.ambientPart.loop = true;
         this.ambientPart.loopEnd = "1m";
-    
+
         this.musicSchedulerLoop = new Tone.Loop(time => {
             const currentPattern = patterns[Math.floor(Math.random() * patterns.length)];
             this.ambientPart.clear().set({ value: currentPattern });
@@ -77,21 +77,21 @@ const GameAudio = {
             }
         }, "2m").start(Tone.now());
     },
-    
+
     startMenuMusic: async function () {
         if (this.isMusicPlaying && this.menuLoop) return;
         await this.initAudio();
         this.stopAllMusic();
         this.isMusicPlaying = true;
-    
+
         Tone.Transport.bpm.value = 60;
         if (Tone.Transport.state !== 'started') Tone.Transport.start();
-    
+
         this.menuLoop = new Tone.Loop(time => {
             const melodyNotes = ["C4", "E4", "G4", "A4", "G4", "E4"];
             const noteIndex = Math.floor((Tone.Transport.seconds / 2) % melodyNotes.length);
             this.musicSynths.menuMelody.triggerAttackRelease(melodyNotes[noteIndex], "2n", time);
-    
+
             if (Math.random() < 0.3) {
                 this.musicSynths.menuPad.triggerAttackRelease(["C3", "G3"], "1m", time);
             }
@@ -111,7 +111,7 @@ const GameAudio = {
         if (this.musicSchedulerLoop) { this.musicSchedulerLoop.stop(0).dispose(); this.musicSchedulerLoop = null; }
         if (this.menuLoop) { this.menuLoop.stop(0).dispose(); this.menuLoop = null; }
         if (this.tensionPart) { this.tensionPart.stop(0).dispose(); this.tensionPart = null; }
-        
+
         Object.values(this.tensionLoops).forEach((loop, i) => {
             if (loop) {
                 loop.stop(0).dispose();
@@ -127,7 +127,7 @@ const GameAudio = {
     increaseTension: function() {
         if (this.isTense) return;
         this.isTense = true;
-        
+
         // Para a música ambiente IMEDIATAMENTE
         if (this.ambientPart) {
             this.ambientPart.stop(0).dispose();
@@ -152,7 +152,7 @@ const GameAudio = {
         } else {
             this.tensionLoops.heartbeat.start(0); // Garante que, se já existia, inicie do 0
         }
-        
+
         if (!this.tensionLoops.alarm) {
             this.tensionLoops.alarm = new Tone.Loop(loopTime => {
                 if (Math.random() < 0.4) {
@@ -181,9 +181,9 @@ const GameAudio = {
         this.isTense = false;
 
         // Para as partes de tensão IMEDIATAMENTE
-        if (this.tensionPart) { 
+        if (this.tensionPart) {
             this.tensionPart.stop(0).dispose();
-            this.tensionPart = null; 
+            this.tensionPart = null;
         }
         Object.values(this.tensionLoops).forEach((loop, i) => {
             if (loop) {
@@ -191,7 +191,7 @@ const GameAudio = {
                 this.tensionLoops[Object.keys(this.tensionLoops)[i]] = null;
             }
         });
-        
+
         this.releaseAllSynths();
 
         // Retorna o BPM ao normal instantaneamente
@@ -210,7 +210,6 @@ const GameAudio = {
             }
             await Tone.start();
             this.audioReady = true;
-            console.log('AudioContext iniciado com sucesso');
         } catch (error) {
             console.error('Erro ao iniciar AudioContext:', error);
         }
@@ -225,10 +224,10 @@ const GameAudio = {
 
         const musicdB = (settings.musicVolume / 100) * 40 - 40;
         const finalMusicVolume = musicdB > -40 ? musicdB : -Infinity;
-        
+
         for (const synth of Object.values(this.musicSynths)) {
             if (synth?.volume) {
-                 synth.volume.value = finalMusicVolume;
+                synth.volume.value = finalMusicVolume;
             }
         }
 

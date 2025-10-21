@@ -16,7 +16,7 @@ export const translations = {
         // Overlays & Buttons
         buttonBack: "Voltar",
         buttonConfirm: "Confirmar",
-        
+
         // Pause Menu
         pauseStatus: "STATUS",
         pauseLocation: "Local:",

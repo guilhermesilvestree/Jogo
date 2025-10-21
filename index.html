@@ -199,6 +199,18 @@
                         <input type="range" id="effects-volume-slider" min="0" max="100" value="75">
                     </div>
 
+                    <div class="option-item-stacked" id="optionControlDocument">
+                        <div class="option-label-group">
+                            <i class="fa-solid fa-gamepad fa-fw"></i>
+                            <div class="inputs-control">
+                                <input type="radio" name="control-change" id="gamepadInput" checked>
+                                <label for="gamepadInput" class="checked-label">Controle</label>
+                                <input type="radio" name="control-change" id="keyboardInput">
+                                <label for="keyboardInput">Teclado</label>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="option-item-stacked">
                         <div class="option-label-group">
                             <i class="fa-solid fa-globe fa-fw"></i>
@@ -463,12 +475,17 @@
             <input type="text" id="player-name-input" maxlength="10" placeholder="Digite seu nome...">
             <button id="confirm-player-name-button" data-translate-key="buttonConfirm">Confirmar</button>
         </div>
+        <div class="alert" id="alertaKeyboardOption">
+            <p style="width: 85%;">Parece que você está tentando usar o teclado! Para ultilizar o teclado mude as configurações apertando <span>esc</span></p>
+        </div>
     </div>
+    <script type="module" src="scripts/alertas.js"></script>
     <script type="module" src="scripts/firebase/firebase.js"></script>
     <script type="module" src="scripts/firebase/auth.js"></script>
-    <script src="scripts/desenvolvimento.js"></script>
+    <script type="module" src="scripts/desenvolvimento.js"></script>
     <script src="scripts/audio.js"></script>
     <script type="module" src="scripts/languages.js"></script>
+    <script type="module" src="scripts/controls.js"></script>
     <script type="module" src="script.js"></script>
 </body>
 
